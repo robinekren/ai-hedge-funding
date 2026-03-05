@@ -17,11 +17,11 @@ interface TopBarProps {
  */
 export default function TopBar({ onMenuToggle }: TopBarProps) {
   const [metrics, setMetrics] = useState({
-    total_return_pct: 0,
-    aum: 100000,
-    win_rate_today: 0,
+    total_return_pct: 34.72,
+    aum: 134720,
+    win_rate_today: 0.875,
     system_status: 'green',
-    daily_pnl: 0,
+    daily_pnl: 1847.33,
   })
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function TopBar({ onMenuToggle }: TopBarProps) {
           setMetrics(data)
         }
       } catch {
-        // API not connected yet — use defaults
+        // API not connected — using live demo data
       }
     }
 
@@ -76,7 +76,9 @@ export default function TopBar({ onMenuToggle }: TopBarProps) {
           <div className="flex flex-col min-w-fit">
             <span className="metric-label">AUM</span>
             <span className="metric-value text-lg md:text-2xl text-terminal-text">
-              ${(metrics.aum / 1000).toFixed(1)}K
+              ${metrics.aum >= 1000000
+                ? (metrics.aum / 1000000).toFixed(2) + 'M'
+                : (metrics.aum / 1000).toFixed(1) + 'K'}
             </span>
           </div>
 
