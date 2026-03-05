@@ -28,6 +28,20 @@ module.exports = {
         'green-glow': '0 0 20px rgba(0, 255, 136, 0.15)',
         'red-glow': '0 0 20px rgba(255, 51, 85, 0.15)',
       },
+      animation: {
+        'slide-in': 'slide-in 0.3s ease-out',
+        'fade-in': 'fade-in 0.3s ease-out',
+      },
+      keyframes: {
+        'slide-in': {
+          from: { opacity: '0', transform: 'translateX(20px)' },
+          to: { opacity: '1', transform: 'translateX(0)' },
+        },
+        'fade-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+      },
     },
   },
   plugins: [],

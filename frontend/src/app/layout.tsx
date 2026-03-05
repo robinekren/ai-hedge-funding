@@ -4,6 +4,7 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'AI Hedge Funding — Dashboard',
   description: 'The World\'s Most Autonomous AI-Driven Hedge Fund',
+  manifest: '/manifest.json',
 }
 
 export const viewport: Viewport = {
@@ -19,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="bg-terminal-bg text-terminal-text font-mono">
+    <html lang="en" suppressHydrationWarning>
+      <body className="bg-terminal-bg text-terminal-text font-mono antialiased">
         {children}
       </body>
     </html>
