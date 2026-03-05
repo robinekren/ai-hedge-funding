@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fund Selector Preview — AI Hedge Funding</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #e0e0e0;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ═══════════════════════════════════════ */
+  /* SIDEBAR                                 */
+  /* ═══════════════════════════════════════ */
+  .sidebar {
+    width: 260px;
+    background: #111111;
+    border-right: 1px solid #1a1a1a;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  /* Logo */
+  .logo {
+    padding: 16px;
+    border-bottom: 1px solid #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: rgba(0,255,136,0.15);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: #00ff88; font-weight: 700; font-size: 16px;
+  }
+  .logo-text h1 { color: #00ff88; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+  .logo-text p { color: #555; font-size: 10px; }
+
+  /* ─────────────────────────────────────── */
+  /* FUND SELECTOR — DAS NEUE ELEMENT       */
+  /* ─────────────────────────────────────── */
+  .fund-selector {
+    margin: 12px;
+    position: relative;
+  }
+  .fund-selector-btn {
+    width: 100%;
+    background: #0a0a0a;
+    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: border-color 0.15s;
+  }
+  .fund-selector-btn:hover {
+    border-color: #333;
+  }
+  .fund-selector-btn.open {
+    border-color: #00ff88;
+    box-shadow: 0 0 20px rgba(0,255,136,0.08);
+  }
+  .fund-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #00ff88;
+    flex-shrink: 0;
+  }
+  .fund-dot.amber { background: #ffaa00; }
+  .fund-dot.blue { background: #4488ff; }
+  .fund-info { flex: 1; text-align: left; }
+  .fund-name {
+    color: #e0e0e0;
+    font-size: 11px;
+    font-weight: 600;
+    display: block;
+  }
+  .fund-aum {
+    color: #555;
+    font-size: 10px;
+    display: block;
+    margin-top: 1px;
+  }
+  .fund-chevron {
+    color: #555;
+    font-size: 10px;
+    transition: transform 0.15s;
+  }
+  .fund-selector-btn.open .fund-chevron {
+    transform: rotate(180deg);
+    color: #00ff88;
+  }
+
+  /* Dropdown */
+  .fund-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: #111;
+    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 100;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    display: none;
+  }
+  .fund-dropdown.show { display: block; }
+
+  .fund-dropdown-item {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: inherit;
+    transition: background 0.1s;
+  }
+  .fund-dropdown-item:hover {
+    background: rgba(0,255,136,0.06);
+  }
+  .fund-dropdown-item.active {
+    background: rgba(0,255,136,0.1);
+  }
+  .fund-dropdown-item.active .fund-name {
+    color: #00ff88;
+  }
+  .fund-dropdown-item + .fund-dropdown-item {
+    border-top: 1px solid #1a1a1a;
+  }
+  .fund-return {
+    font-size: 10px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .fund-return.positive { color: #00ff88; }
+  .fund-return.negative { color: #ff3355; }
+
+  .fund-dropdown-add {
+    width: 100%;
+    background: none;
+    border: none;
+    border-top: 1px solid #1a1a1a;
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: inherit;
+    color: #555;
+    font-size: 11px;
+    transition: color 0.1s;
+  }
+  .fund-dropdown-add:hover {
+    color: #00ff88;
+    background: rgba(0,255,136,0.04);
+  }
+  .fund-dropdown-add span:first-child {
+    font-size: 14px;
+    width: 8px;
+    text-align: center;
+  }
+
+  /* ─────────────────────────────────────── */
+  /* NAV ITEMS (existing, unchanged)         */
+  /* ─────────────────────────────────────── */
+  .nav { flex: 1; padding: 8px 0; overflow-y: auto; }
+  .nav-section {
+    padding: 8px 16px 4px;
+    color: #555;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+  .nav-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    color: #888;
+    transition: all 0.1s;
+    text-align: left;
+  }
+  .nav-item:hover {
+    background: rgba(0,255,136,0.06);
+    color: #00ff88;
+  }
+  .nav-item.active {
+    color: #00ff88;
+    background: rgba(0,255,136,0.1);
+    border-right: 2px solid #00ff88;
+  }
+  .nav-icon { width: 24px; font-size: 11px; text-align: center; }
+  .nav-label { flex: 1; }
+  .nav-shortcut {
+    font-size: 10px;
+    color: #555;
+    background: #0a0a0a;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  /* Bottom user section */
+  .sidebar-bottom {
+    padding: 16px;
+    border-top: 1px solid #1a1a1a;
+  }
+  .sidebar-bottom .theme-btn {
+    background: none; border: none; cursor: pointer;
+    font-family: inherit; font-size: 11px; color: #555;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .sidebar-bottom .user-row {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sidebar-bottom .user-name { color: #00ff88; font-size: 11px; font-weight: 700; }
+  .sidebar-bottom .user-role { color: #555; font-size: 10px; }
+  .sidebar-bottom .signout {
+    background: none; border: none; cursor: pointer;
+    font-family: inherit; font-size: 11px; color: #555;
+  }
+  .sidebar-bottom .signout:hover { color: #ff3355; }
+  .sidebar-bottom .hint { color: #555; font-size: 10px; margin-top: 10px; }
+
+  /* ═══════════════════════════════════════ */
+  /* MAIN CONTENT (placeholder)              */
+  /* ═══════════════════════════════════════ */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .topbar {
+    height: 48px;
+    background: #111;
+    border-bottom: 1px solid #1a1a1a;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+  }
+  .topbar-title { color: #00ff88; font-size: 13px; font-weight: 600; }
+  .topbar-phase {
+    font-size: 10px; color: #ffaa00;
+    border: 1px solid rgba(255,170,0,0.3);
+    padding: 2px 8px; border-radius: 4px;
+  }
+  .topbar-spacer { flex: 1; }
+  .topbar-status {
+    font-size: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .topbar-dot { width: 6px; height: 6px; border-radius: 50%; background: #00ff88; }
+
+  .content {
+    flex: 1;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .placeholder-box {
+    border: 1px dashed #1a1a1a;
+    border-radius: 12px;
+    padding: 48px;
+    text-align: center;
+    color: #333;
+  }
+  .placeholder-box p { font-size: 12px; margin-top: 8px; }
+
+  /* ═══════════════════════════════════════ */
+  /* ANNOTATIONS (for the preview only)      */
+  /* ═══════════════════════════════════════ */
+  .annotation {
+    position: fixed;
+    background: #ffaa00;
+    color: #0a0a0a;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 6px;
+    z-index: 200;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .annotation::before {
+    content: '';
+    position: absolute;
+    width: 0; height: 0;
+  }
+  .annotation-arrow-left::before {
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-right-color: #ffaa00;
+  }
+  .annotation-new {
+    top: 110px;
+    left: 274px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<div class="sidebar">
+
+  <!-- Logo (unchanged) -->
+  <div class="logo">
+    <div class="logo-icon">A</div>
+    <div class="logo-text">
+      <h1>AI HEDGE FUNDING</h1>
+      <p>Eko Growth LLC</p>
+    </div>
+  </div>
+
+  <!-- ★ FUND SELECTOR — NEU ★ -->
+  <div class="fund-selector">
+    <button class="fund-selector-btn open" onclick="toggleDropdown()">
+      <div class="fund-dot"></div>
+      <div class="fund-info">
+        <span class="fund-name">Al Maktoum Fund</span>
+        <span class="fund-aum">$2.4B AUM</span>
+      </div>
+      <span class="fund-chevron">▼</span>
+    </button>
+
+    <div class="fund-dropdown show" id="dropdown">
+      <button class="fund-dropdown-item active">
+        <div class="fund-dot"></div>
+        <div class="fund-info">
+          <span class="fund-name">Al Maktoum Fund</span>
+          <span class="fund-aum">$2.4B AUM</span>
+        </div>
+        <span class="fund-return positive">+34.7%</span>
+      </button>
+      <button class="fund-dropdown-item">
+        <div class="fund-dot amber"></div>
+        <div class="fund-info">
+          <span class="fund-name">Al Nahyan Capital</span>
+          <span class="fund-aum">$890M AUM</span>
+        </div>
+        <span class="fund-return positive">+18.2%</span>
+      </button>
+      <button class="fund-dropdown-item">
+        <div class="fund-dot blue"></div>
+        <div class="fund-info">
+          <span class="fund-name">Eko Growth Fund I</span>
+          <span class="fund-aum">$134K AUM</span>
+        </div>
+        <span class="fund-return positive">+41.3%</span>
+      </button>
+      <button class="fund-dropdown-add">
+        <span>+</span>
+        <span>New Fund</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Nav (unchanged from current) -->
+  <nav class="nav">
+    <div class="nav-section">Phase 1</div>
+    <button class="nav-item active">
+      <span class="nav-icon">[P]</span>
+      <span class="nav-label">Portfolio</span>
+      <kbd class="nav-shortcut">1</kbd>
+    </button>
+    <button class="nav-item">
+      <span class="nav-icon">[T]</span>
+      <span class="nav-label">Live Trades</span>
+      <kbd class="nav-shortcut">2</kbd>
+    </button>
+    <button class="nav-item">
+      <span class="nav-icon">[S]</span>
+      <span class="nav-label">Signal Feed</span>
+      <kbd class="nav-shortcut">3</kbd>
+    </button>
+    <button class="nav-item">
+      <span class="nav-icon">[A]</span>
+      <span class="nav-label">Agent Status</span>
+      <kbd class="nav-shortcut">4</kbd>
+    </button>
+    <button class="nav-item">
+      <span class="nav-icon">[R]</span>
+      <span class="nav-label">Risk Monitor</span>
+      <kbd class="nav-shortcut">5</kbd>
+    </button>
+
+    <div class="nav-section">Phase 2</div>
+    <button class="nav-item">
+      <span class="nav-icon">[#]</span>
+      <span class="nav-label">Strategies</span>
+      <kbd class="nav-shortcut">7</kbd>
+    </button>
+
+    <div class="nav-section">Owner</div>
+    <button class="nav-item">
+      <span class="nav-icon">[C]</span>
+      <span class="nav-label">Controls</span>
+      <kbd class="nav-shortcut">6</kbd>
+    </button>
+
+    <div class="nav-section">LP</div>
+    <button class="nav-item">
+      <span class="nav-icon">[I]</span>
+      <span class="nav-label">Investor Portal</span>
+      <kbd class="nav-shortcut">8</kbd>
+    </button>
+
+    <div class="nav-section">System</div>
+    <button class="nav-item">
+      <span class="nav-icon">[L]</span>
+      <span class="nav-label">Activity Log</span>
+      <kbd class="nav-shortcut">9</kbd>
+    </button>
+  </nav>
+
+  <!-- Bottom (unchanged) -->
+  <div class="sidebar-bottom">
+    <button class="theme-btn">[D] Dark Mode</button>
+    <div class="user-row">
+      <div>
+        <div class="user-name">Robin</div>
+        <div class="user-role">Fund Manager</div>
+      </div>
+      <button class="signout">Sign out</button>
+    </div>
+    <p class="hint">Ctrl+K: Command Palette</p>
+  </div>
+</div>
+
+<!-- ═══ MAIN CONTENT ═══ -->
+<div class="main">
+  <div class="topbar">
+    <span class="topbar-title">Portfolio Overview</span>
+    <span class="topbar-phase">PHASE 1 — AI ONLY</span>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-status">
+      <div class="topbar-dot"></div>
+      <span style="color:#888;font-size:11px;">Al Maktoum Fund</span>
+    </div>
+  </div>
+  <div class="content">
+    <div class="placeholder-box">
+      <p style="font-size:24px;color:#1a1a1a;">📊</p>
+      <p>Portfolio data scoped to selected fund</p>
+      <p style="color:#555;margin-top:4px;">All screens filter by active fund context</p>
+    </div>
+  </div>
+</div>
+
+<!-- Annotation -->
+<div class="annotation annotation-arrow-left annotation-new">← NEU: Fund Selector</div>
+
+<script>
+  function toggleDropdown() {
+    const btn = document.querySelector('.fund-selector-btn');
+    const dd = document.getElementById('dropdown');
+    btn.classList.toggle('open');
+    dd.classList.toggle('show');
+  }
+
+  // Click on fund items
+  document.querySelectorAll('.fund-dropdown-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.fund-dropdown-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+
+      const name = item.querySelector('.fund-name').textContent;
+      const aum = item.querySelector('.fund-aum').textContent;
+      const dot = item.querySelector('.fund-dot');
+
+      document.querySelector('.fund-selector-btn .fund-name').textContent = name;
+      document.querySelector('.fund-selector-btn .fund-aum').textContent = aum;
+
+      // Update topbar
+      document.querySelector('.topbar-status span').textContent = name;
+
+      // Close dropdown
+      toggleDropdown();
+    });
+  });
+</script>
+</body>
+</html>
