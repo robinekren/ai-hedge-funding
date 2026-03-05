@@ -5,7 +5,8 @@ import { clsx } from 'clsx'
 import { useStore } from '@/store/useStore'
 
 export default function LiveTrades() {
-  const { addToast, addAuditEntry, auth, setSelectedTicker } = useStore()
+  const { addToast, addAuditEntry, auth, setSelectedTicker, activeFundId, funds } = useStore()
+  const activeFund = funds.find(f => f.id === activeFundId)
   const [confirmDialog, setConfirmDialog] = useState<{ type: 'approve' | 'reject'; proposal: typeof pendingProposals[0] } | null>(null)
 
   const [positions] = useState([
@@ -69,7 +70,10 @@ export default function LiveTrades() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-terminal-green text-xl font-bold">Live Trades</h2>
+        <h2 className="text-terminal-green text-xl font-bold">
+          Live Trades
+          {activeFund && <span className="text-terminal-text-dim text-sm font-normal ml-3">— {activeFund.name}</span>}
+        </h2>
         <div className="flex items-center gap-4 text-sm">
           <span className="text-terminal-text-dim">{positions.length} positions</span>
           <span className={clsx('font-bold', totalUnrealizedPnl >= 0 ? 'text-terminal-green' : 'text-terminal-red')}>

@@ -9,7 +9,8 @@ interface TopBarProps {
 }
 
 export default function TopBar({ onMenuToggle }: TopBarProps) {
-  const { backendConnected, setBackendConnected, setLastDataUpdate, emergencyActive } = useStore()
+  const { backendConnected, setBackendConnected, setLastDataUpdate, emergencyActive, activeFundId, funds } = useStore()
+  const activeFund = funds.find(f => f.id === activeFundId)
 
   const [metrics, setMetrics] = useState({
     total_return_pct: 34.72,
@@ -22,7 +23,8 @@ export default function TopBar({ onMenuToggle }: TopBarProps) {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const res = await fetch('http://localhost:8000/api/dashboard/metrics')
+        const fundParam = activeFundId ? `?fund_id=${encodeURIComponent(activeFundId)}` : ''
+        const res = await fetch(`http://localhost:8000/api/dashboard/metrics${fundParam}`)
         if (res.ok) {
           const data = await res.json()
           if (data.aum > 0) {
@@ -39,7 +41,7 @@ export default function TopBar({ onMenuToggle }: TopBarProps) {
     fetchMetrics()
     const interval = setInterval(fetchMetrics, 10000)
     return () => clearInterval(interval)
-  }, [setBackendConnected, setLastDataUpdate])
+  }, [setBackendConnected, setLastDataUpdate, activeFundId])
 
   const isGreen = !emergencyActive && metrics.system_status === 'green'
 
@@ -104,12 +106,19 @@ export default function TopBar({ onMenuToggle }: TopBarProps) {
           </div>
         </div>
 
-        {/* Connection indicator */}
-        <div className="hidden md:flex items-center gap-2 ml-4">
-          <div className={clsx('w-1.5 h-1.5 rounded-full', backendConnected ? 'bg-terminal-green' : 'bg-terminal-amber')} />
-          <span className="text-[10px] text-terminal-text-muted">
-            {backendConnected ? 'API' : 'DEMO'}
-          </span>
+        {/* Fund name + Connection indicator */}
+        <div className="hidden md:flex items-center gap-3 ml-4">
+          {activeFund && (
+            <span className="text-[10px] text-terminal-text-dim font-semibold">
+              {activeFund.name}
+            </span>
+          )}
+          <div className="flex items-center gap-1.5">
+            <div className={clsx('w-1.5 h-1.5 rounded-full', backendConnected ? 'bg-terminal-green' : 'bg-terminal-amber')} />
+            <span className="text-[10px] text-terminal-text-muted">
+              {backendConnected ? 'API' : 'DEMO'}
+            </span>
+          </div>
         </div>
       </div>
     </header>

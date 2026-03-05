@@ -1,8 +1,8 @@
 """
 AI Hedge Funding — Authentication
-Owner (Robin): Full access
-CTO (Felix): Full technical access
-Investor: Read-only separate portal
+Owner (Robin): Full access to all funds
+CTO (Felix): Full technical access to all funds
+Investor: Read-only, scoped to assigned funds only
 """
 
 from datetime import datetime, timedelta
@@ -33,18 +33,21 @@ class User(BaseModel):
 
 
 # Pre-defined users — the team is locked
+# fund_ids: which funds this user can access (empty = all for owner/cto)
 USERS = {
     "robin": {
         "username": "robin",
         "password_hash": pwd_context.hash("change-me"),
         "role": UserRole.OWNER,
         "full_name": "Robin",
+        "fund_ids": [],  # Owner sees all funds
     },
     "felix": {
         "username": "felix",
         "password_hash": pwd_context.hash("change-me"),
         "role": UserRole.CTO,
         "full_name": "Felix",
+        "fund_ids": [],  # CTO sees all funds
     },
 }
 

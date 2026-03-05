@@ -40,6 +40,19 @@ export interface AuthState {
   sessionExpiry: number | null
 }
 
+export interface Fund {
+  id: string
+  name: string
+  color: string
+  starting_capital: number
+  phase: string
+  execution_mode: string
+  daily_loss_limit: number
+  max_position_size_pct: number
+  emergency_active: boolean
+  created_at: string
+}
+
 // ─── Store ───────────────────────────────────────────────────────────────────
 
 interface AppState {
@@ -48,6 +61,12 @@ interface AppState {
   login: (user: string, password: string) => boolean
   verify2FA: (code: string) => boolean
   logout: () => void
+
+  // Funds
+  funds: Fund[]
+  activeFundId: string | null
+  setFunds: (funds: Fund[]) => void
+  setActiveFund: (fundId: string) => void
 
   // Navigation
   activeScreen: Screen
@@ -192,6 +211,47 @@ export const useStore = create<AppState>()(
         })
       },
 
+      // ─── Funds ──────────────────────────────────────────────────
+      funds: [{
+        id: 'fund_default',
+        name: 'AI Hedge Funding',
+        color: '#00ff88',
+        starting_capital: 100000,
+        phase: 'phase_1',
+        execution_mode: 'supervised',
+        daily_loss_limit: 1000,
+        max_position_size_pct: 0.05,
+        emergency_active: false,
+        created_at: new Date().toISOString(),
+      }],
+      activeFundId: 'fund_default',
+      setFunds: (funds) => {
+        set({ funds })
+        // If active fund not in new list, select first
+        const state = get()
+        if (!funds.find(f => f.id === state.activeFundId) && funds.length > 0) {
+          set({ activeFundId: funds[0].id })
+        }
+      },
+      setActiveFund: (fundId) => {
+        set({ activeFundId: fundId })
+        const fund = get().funds.find(f => f.id === fundId)
+        if (fund) {
+          // Sync per-fund controls to store
+          set({
+            currentPhase: fund.phase,
+            dailyLossLimit: fund.daily_loss_limit,
+            emergencyActive: fund.emergency_active,
+          })
+        }
+        get().addAuditEntry({
+          user: get().auth.user?.name || 'system',
+          action: `Switched to fund: ${fund?.name || fundId}`,
+          category: 'system',
+          severity: 'info',
+        })
+      },
+
       // ─── Navigation ────────────────────────────────────────────
       activeScreen: 'portfolio',
       setActiveScreen: (screen) => set({ activeScreen: screen }),
@@ -310,6 +370,7 @@ export const useStore = create<AppState>()(
       partialize: (state) => ({
         auth: state.auth,
         theme: state.theme,
+        activeFundId: state.activeFundId,
         onboardingComplete: state.onboardingComplete,
         currentPhase: state.currentPhase,
         dailyLossLimit: state.dailyLossLimit,

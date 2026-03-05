@@ -34,13 +34,13 @@ class Settings(BaseSettings):
     TEAM_OWNER: str = "Robin"
     TEAM_CTO: str = "Felix"
 
-    # === PHASE CONTROL ===
+    # === PHASE CONTROL (defaults for new funds) ===
     CURRENT_PHASE: Phase = Phase.PHASE_1
     EXECUTION_MODE: ExecutionMode = ExecutionMode.SUPERVISED
     META_LEARNER_MODE: MetaLearnerMode = MetaLearnerMode.SUPERVISED
 
-    # === RISK CONTROLS ===
-    DAILY_LOSS_LIMIT: float = Field(default=1000.0, description="Daily loss limit in USD — kill switch threshold")
+    # === RISK CONTROLS (defaults for new funds — per-fund overrides live on Fund model) ===
+    DAILY_LOSS_LIMIT: float = Field(default=1000.0, description="Default daily loss limit for new funds")
     EMERGENCY_STOP: bool = False
     MAX_POSITION_SIZE_PCT: float = 0.05  # 5% of portfolio per position
     MAX_CORRELATION: float = 0.7

@@ -6,8 +6,11 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar,
 } from 'recharts'
+import { useStore } from '@/store/useStore'
 
 export default function PortfolioOverview() {
+  const { activeFundId, funds } = useStore()
+  const activeFund = funds.find(f => f.id === activeFundId)
   const [portfolio] = useState({
     total_value: 134720,
     cash: 18240,
@@ -86,7 +89,10 @@ export default function PortfolioOverview() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-terminal-green text-xl font-bold">Portfolio Overview</h2>
+      <h2 className="text-terminal-green text-xl font-bold">
+        Portfolio Overview
+        {activeFund && <span className="text-terminal-text-dim text-sm font-normal ml-3">— {activeFund.name}</span>}
+      </h2>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

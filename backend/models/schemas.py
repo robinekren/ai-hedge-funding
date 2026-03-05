@@ -59,6 +59,26 @@ class AssetClass(str, Enum):
     FX_COMMODITIES = "fx_commodities"  # Phase 2
 
 
+# ─── Fund Model ────────────────────────────────────────────
+
+class Fund(BaseModel):
+    """
+    A single fund managed by the platform.
+    Each fund has its own phase, risk limits, positions, and strategies.
+    Signals and agents are shared across funds.
+    """
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    name: str
+    color: str = "#00ff88"  # Sidebar dot color
+    starting_capital: float = 100000.0
+    phase: str = "phase_1"  # phase_1, phase_2, phase_3
+    execution_mode: str = "supervised"  # supervised, semi_autonomous, fully_autonomous
+    daily_loss_limit: float = 1000.0
+    max_position_size_pct: float = 0.05
+    emergency_active: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 # ─── Signal Models ───────────────────────────────────────
 
 class SocialSignal(BaseModel):
@@ -90,6 +110,7 @@ class ChatterAnalysis(BaseModel):
 
 class TradeProposal(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
+    fund_id: str = ""
     ticker: str
     action: TradeAction
     quantity: int
@@ -109,6 +130,7 @@ class TradeProposal(BaseModel):
 
 class Position(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
+    fund_id: str = ""
     ticker: str
     quantity: int
     entry_price: float
@@ -124,6 +146,7 @@ class Position(BaseModel):
 
 class Strategy(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
+    fund_id: str = ""
     name: str
     description: str
     asset_class: AssetClass = AssetClass.US_EQUITIES
@@ -140,6 +163,7 @@ class Strategy(BaseModel):
 
 class BacktestResult(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
+    fund_id: str = ""
     strategy_id: str
     start_date: str
     end_date: str
@@ -169,6 +193,7 @@ class AgentState(BaseModel):
 
 class PortfolioSnapshot(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
+    fund_id: str = ""
     total_value: float
     cash: float
     invested: float
@@ -184,6 +209,7 @@ class PortfolioSnapshot(BaseModel):
 # ─── Risk Models ─────────────────────────────────────────
 
 class RiskSnapshot(BaseModel):
+    fund_id: str = ""
     daily_loss: float
     daily_loss_limit: float
     max_drawdown: float
@@ -198,6 +224,7 @@ class RiskSnapshot(BaseModel):
 
 class DashboardMetrics(BaseModel):
     """The 5 Trillionaire Metrics — always visible in top bar."""
+    fund_id: str = ""
     total_return_pct: float
     aum: float
     win_rate_today: float
@@ -212,6 +239,7 @@ class OwnerControl(BaseModel):
 
 class InvestorPortfolioView(BaseModel):
     """Read-only view for LP investors."""
+    fund_id: str = ""
     total_fund_return: float
     capital_deployed: float
     monthly_performance: list[float]

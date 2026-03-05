@@ -9,7 +9,8 @@ import {
 import { useStore } from '@/store/useStore'
 
 export default function RiskMonitor() {
-  const { dailyLossLimit } = useStore()
+  const { dailyLossLimit, activeFundId, funds } = useStore()
+  const activeFund = funds.find(f => f.id === activeFundId)
 
   const [risk] = useState({
     daily_loss: -47.20,
@@ -92,7 +93,10 @@ export default function RiskMonitor() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-terminal-green text-xl font-bold">Risk Monitor</h2>
+        <h2 className="text-terminal-green text-xl font-bold">
+          Risk Monitor
+          {activeFund && <span className="text-terminal-text-dim text-sm font-normal ml-3">— {activeFund.name}</span>}
+        </h2>
         <span className="text-terminal-green text-xs font-bold">ALL CLEAR</span>
       </div>
 
