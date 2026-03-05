@@ -47,18 +47,8 @@ export default function LoginScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-terminal-bg flex items-center justify-center p-4">
-      {/* Background grid effect */}
-      <div className="fixed inset-0 opacity-5">
-        <div
-          className="w-full h-full"
-          style={{
-            backgroundImage:
-              'linear-gradient(rgba(0,255,136,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,136,0.1) 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
-          }}
-        />
-      </div>
+    <div className="min-h-screen bg-terminal-bg flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="hf-bg animate" aria-hidden="true" />
 
       <div className="relative w-full max-w-md">
         {/* Logo */}
