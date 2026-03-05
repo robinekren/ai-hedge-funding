@@ -8,6 +8,9 @@ import TopBar from '@/components/layout/TopBar'
 import ToastContainer from '@/components/ui/ToastContainer'
 import CommandPalette from '@/components/ui/CommandPalette'
 import Onboarding from '@/components/ui/Onboarding'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
+import ConnectionBanner from '@/components/ui/ConnectionBanner'
+import { useWebSocket } from '@/hooks/useWebSocket'
 import PortfolioOverview from '@/components/dashboard/PortfolioOverview'
 import LiveTrades from '@/components/dashboard/LiveTrades'
 import SignalFeed from '@/components/dashboard/SignalFeed'
@@ -21,6 +24,7 @@ import AuditLog from '@/components/dashboard/AuditLog'
 export default function Dashboard() {
   const {
     auth,
+    logout,
     activeScreen,
     setActiveScreen,
     sidebarOpen,
@@ -29,6 +33,21 @@ export default function Dashboard() {
     commandPaletteOpen,
     setCommandPaletteOpen,
   } = useStore()
+
+  // WebSocket connection
+  useWebSocket()
+
+  // Session timeout check
+  useEffect(() => {
+    const checkSession = () => {
+      if (auth.isAuthenticated && auth.sessionExpiry && Date.now() > auth.sessionExpiry) {
+        logout()
+      }
+    }
+    const interval = setInterval(checkSession, 30000)
+    checkSession()
+    return () => clearInterval(interval)
+  }, [auth.isAuthenticated, auth.sessionExpiry, logout])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -91,9 +110,12 @@ export default function Dashboard() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+        <ConnectionBanner />
 
         <main className="flex-1 overflow-auto p-4 md:p-6">
-          {renderScreen()}
+          <ErrorBoundary fallbackLabel={activeScreen}>
+            {renderScreen()}
+          </ErrorBoundary>
         </main>
       </div>
 

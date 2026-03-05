@@ -6,37 +6,12 @@ import { useStore } from '@/store/useStore'
 const STEPS = [
   {
     title: 'Welcome to AI Hedge Funding',
-    description: 'The world\'s most autonomous AI-driven hedge fund dashboard. Let\'s walk through the key features.',
-    highlight: 'portfolio',
-  },
-  {
-    title: 'Portfolio Overview',
-    description: 'Track your total portfolio value, equity curve, and top-performing strategies in real-time.',
-    highlight: 'portfolio',
-  },
-  {
-    title: 'Live Trades & Signals',
-    description: 'Monitor open positions, pending proposals, and Reddit signal intelligence that powers our alpha.',
-    highlight: 'trades',
-  },
-  {
-    title: '8 AI Agents',
-    description: 'Each agent has a specialized role — from harvesting signals to executing trades at 50ms speed.',
-    highlight: 'agents',
-  },
-  {
-    title: 'Risk Monitor',
-    description: 'Real-time drawdown tracking, correlation heatmaps, VaR analysis, and the kill switch that protects your capital.',
-    highlight: 'risk',
-  },
-  {
-    title: 'Keyboard Shortcuts',
-    description: 'Press Ctrl+K (or Cmd+K) for the command palette. Navigate with keyboard shortcuts 1-9.',
+    description: 'Your autonomous AI hedge fund dashboard. Navigate screens with keys 1-9, open the command palette with Ctrl+K. Approve trades, monitor risk, and control all 8 AI agents from here.',
     highlight: 'portfolio',
   },
   {
     title: 'You\'re Ready',
-    description: 'The system is live. Monitor, control, and scale your AI hedge fund from this dashboard.',
+    description: 'The system is live. Start on the Portfolio Overview, explore Live Trades, Signal Feed, and Risk Monitor. Full control at your fingertips.',
     highlight: 'portfolio',
   },
 ]

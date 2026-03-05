@@ -6,8 +6,9 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { useStore } from '@/store/useStore'
 
 export default function InvestorPortal() {
-  const { addToast } = useStore()
-  const [selectedLP, setSelectedLP] = useState('all')
+  const { addToast, auth } = useStore()
+  const isInvestor = auth.user?.role === 'investor'
+  const [selectedLP, setSelectedLP] = useState(isInvestor ? 'lp_1' : 'all')
 
   const lpData: Record<string, { name: string; investment: number; share: number; joinDate: string }> = {
     robin: { name: 'Robin (GP)', investment: 50000, share: 50.0, joinDate: 'Oct 2025' },
@@ -61,23 +62,25 @@ export default function InvestorPortal() {
         </div>
       </div>
 
-      {/* LP Selector */}
-      <div className="flex gap-2 overflow-x-auto">
-        {[{ id: 'all', name: 'All Fund' }, ...Object.entries(lpData).map(([id, d]) => ({ id, name: d.name }))].map((lp) => (
-          <button
-            key={lp.id}
-            onClick={() => setSelectedLP(lp.id)}
-            className={clsx(
-              'px-3 py-1.5 rounded text-xs font-bold whitespace-nowrap transition-colors',
-              selectedLP === lp.id
-                ? 'bg-terminal-green text-terminal-bg'
-                : 'border border-terminal-border text-terminal-text-dim hover:border-terminal-green/50'
-            )}
-          >
-            {lp.name}
-          </button>
-        ))}
-      </div>
+      {/* LP Selector — hidden for investors */}
+      {!isInvestor && (
+        <div className="flex gap-2 overflow-x-auto">
+          {[{ id: 'all', name: 'All Fund' }, ...Object.entries(lpData).map(([id, d]) => ({ id, name: d.name }))].map((lp) => (
+            <button
+              key={lp.id}
+              onClick={() => setSelectedLP(lp.id)}
+              className={clsx(
+                'px-3 py-1.5 rounded text-xs font-bold whitespace-nowrap transition-colors',
+                selectedLP === lp.id
+                  ? 'bg-terminal-green text-terminal-bg'
+                  : 'border border-terminal-border text-terminal-text-dim hover:border-terminal-green/50'
+              )}
+            >
+              {lp.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Notice */}
       <div className="card border border-terminal-amber/30">
@@ -103,11 +106,13 @@ export default function InvestorPortal() {
           <p className="metric-value text-terminal-green">+{investorData.fees.net_return_after_fees.toFixed(2)}%</p>
           <p className="text-[10px] text-terminal-text-muted mt-1">50% carry + 3% mgmt</p>
         </div>
-        <div className="card">
-          <p className="metric-label">Total Investors</p>
-          <p className="metric-value text-terminal-amber">{Object.keys(lpData).length}</p>
-          <p className="text-xs text-terminal-text-muted mt-1">Eko Growth LLC</p>
-        </div>
+        {!isInvestor && (
+          <div className="card">
+            <p className="metric-label">Total Investors</p>
+            <p className="metric-value text-terminal-amber">{Object.keys(lpData).length}</p>
+            <p className="text-xs text-terminal-text-muted mt-1">Eko Growth LLC</p>
+          </div>
+        )}
       </div>
 
       {/* NAV Chart */}
@@ -171,9 +176,9 @@ export default function InvestorPortal() {
         </div>
       </div>
 
-      {/* LP Allocation */}
+      {/* LP Allocation — owners see all, investors see only their own */}
       <div className="card">
-        <h3 className="text-terminal-green text-sm font-bold mb-4">LP ALLOCATION</h3>
+        <h3 className="text-terminal-green text-sm font-bold mb-4">{isInvestor ? 'YOUR ALLOCATION' : 'LP ALLOCATION'}</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -187,22 +192,24 @@ export default function InvestorPortal() {
               </tr>
             </thead>
             <tbody>
-              {Object.entries(lpData).map(([id, lp]) => {
-                const currentValue = Math.round(investorData.capital_deployed * (lp.share / 100))
-                const pnl = currentValue - lp.investment
-                return (
-                  <tr key={id} className="border-b border-terminal-border/50">
-                    <td className="py-2 text-terminal-text">{lp.name}</td>
-                    <td className="py-2 text-right text-terminal-text-dim">${lp.investment.toLocaleString()}</td>
-                    <td className="py-2 text-right text-terminal-text">{lp.share.toFixed(1)}%</td>
-                    <td className="py-2 text-right text-terminal-text font-bold">${currentValue.toLocaleString()}</td>
-                    <td className={clsx('py-2 text-right font-bold', pnl >= 0 ? 'text-terminal-green' : 'text-terminal-red')}>
-                      {pnl >= 0 ? '+' : ''}${pnl.toLocaleString()}
-                    </td>
-                    <td className="py-2 text-terminal-text-muted text-xs hidden md:table-cell">{lp.joinDate}</td>
-                  </tr>
-                )
-              })}
+              {Object.entries(lpData)
+                .filter(([id]) => isInvestor ? id === 'lp_1' : true)
+                .map(([id, lp]) => {
+                  const currentValue = Math.round(investorData.capital_deployed * (lp.share / 100))
+                  const pnl = currentValue - lp.investment
+                  return (
+                    <tr key={id} className="border-b border-terminal-border/50">
+                      <td className="py-2 text-terminal-text">{lp.name}</td>
+                      <td className="py-2 text-right text-terminal-text-dim">${lp.investment.toLocaleString()}</td>
+                      <td className="py-2 text-right text-terminal-text">{lp.share.toFixed(1)}%</td>
+                      <td className="py-2 text-right text-terminal-text font-bold">${currentValue.toLocaleString()}</td>
+                      <td className={clsx('py-2 text-right font-bold', pnl >= 0 ? 'text-terminal-green' : 'text-terminal-red')}>
+                        {pnl >= 0 ? '+' : ''}${pnl.toLocaleString()}
+                      </td>
+                      <td className="py-2 text-terminal-text-muted text-xs hidden md:table-cell">{lp.joinDate}</td>
+                    </tr>
+                  )
+                })}
             </tbody>
           </table>
         </div>

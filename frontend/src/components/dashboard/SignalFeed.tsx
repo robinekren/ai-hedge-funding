@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { clsx } from 'clsx'
+import { useStore } from '@/store/useStore'
 
 const SIGNAL_COLORS: Record<string, string> = {
   steady_chatter: 'text-terminal-green',
@@ -22,6 +23,9 @@ const SIGNAL_LABELS: Record<string, string> = {
  * Live Reddit signals — what the system is watching right now.
  */
 export default function SignalFeed() {
+  const { addToast, addAuditEntry } = useStore()
+  const alertedRef = useRef<Set<string>>(new Set())
+
   const [signals] = useState([
     { id: 'sig-1', ticker: 'SMCI', signal_type: 'steady_chatter', mention_count: 342, spike_ratio: 1.3, signal_quality: 0.92, source: 'r/wallstreetbets', time: '2m ago' },
     { id: 'sig-2', ticker: 'GME', signal_type: 'spike', mention_count: 14720, spike_ratio: 47.2, signal_quality: 0.96, source: 'r/wallstreetbets', time: '4m ago' },
@@ -46,6 +50,22 @@ export default function SignalFeed() {
     viral: signals.filter(s => s.signal_type === 'mass_excitement').length,
     cooling: signals.filter(s => s.signal_type === 'cooling').length,
   }
+
+  // Alert on spike/viral signals
+  useEffect(() => {
+    signals.forEach((s) => {
+      if (alertedRef.current.has(s.id)) return
+      if (s.signal_type === 'spike') {
+        alertedRef.current.add(s.id)
+        addToast({ type: 'warning', title: `Spike: $${s.ticker}`, message: `${s.mention_count.toLocaleString()} mentions (${s.spike_ratio}x) — SELL signal` })
+        addAuditEntry({ user: 'system', action: `Spike detected: $${s.ticker} — ${s.mention_count.toLocaleString()} mentions, ${s.spike_ratio}x baseline`, category: 'trade', severity: 'warning' })
+      } else if (s.signal_type === 'mass_excitement') {
+        alertedRef.current.add(s.id)
+        addToast({ type: 'error', title: `Viral Alert: $${s.ticker}`, message: `${s.mention_count.toLocaleString()} mentions (${s.spike_ratio}x) — AVOID`, autoDismiss: false })
+        addAuditEntry({ user: 'system', action: `Viral alert: $${s.ticker} — ${s.mention_count.toLocaleString()} mentions, ${s.spike_ratio}x baseline`, category: 'trade', severity: 'critical' })
+      }
+    })
+  }, [signals, addToast, addAuditEntry])
 
   return (
     <div className="space-y-6">

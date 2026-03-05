@@ -315,6 +315,44 @@ export default function PortfolioOverview() {
         </div>
       </div>
 
+      {/* Rebalancing History */}
+      <div className="card">
+        <h3 className="text-terminal-green text-sm font-bold mb-4">REBALANCING HISTORY — Portfolio Conductor</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-terminal-text-muted border-b border-terminal-border">
+                <th className="text-left py-2">Date</th>
+                <th className="text-left py-2">Action</th>
+                <th className="text-right py-2">Before</th>
+                <th className="text-right py-2">After</th>
+                <th className="text-right py-2">Drift</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { date: '2026-03-05', action: 'Trimmed NVDA, added SOFI', before: '38.1%', after: '36.2%', drift: '1.9%' },
+                { date: '2026-03-04', action: 'Reduced crypto exposure', before: '15.4%', after: '12.7%', drift: '2.7%' },
+                { date: '2026-03-03', action: 'Added RKLB position', before: '7.2%', after: '8.6%', drift: '1.4%' },
+                { date: '2026-03-02', action: 'Exited BBBY, WISH trimmed', before: '8.1%', after: '6.9%', drift: '1.2%' },
+                { date: '2026-03-01', action: 'Target allocation reset', before: '—', after: '—', drift: '0.0%' },
+              ].map((r, i) => (
+                <tr key={i} className="border-b border-terminal-border/50">
+                  <td className="py-2 text-terminal-text-muted text-xs">{r.date}</td>
+                  <td className="py-2 text-terminal-text">{r.action}</td>
+                  <td className="py-2 text-right text-terminal-text-dim">{r.before}</td>
+                  <td className="py-2 text-right text-terminal-text">{r.after}</td>
+                  <td className={clsx('py-2 text-right text-xs font-bold', parseFloat(r.drift) > 2 ? 'text-terminal-amber' : 'text-terminal-green')}>
+                    {r.drift}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-[10px] text-terminal-text-muted mt-2">Auto-rebalanced daily by Portfolio Conductor agent. Max drift threshold: 3%.</p>
+      </div>
+
       {/* Target Metrics */}
       <div className="card">
         <h3 className="text-terminal-green text-sm font-bold mb-4">TARGET vs ACTUAL</h3>

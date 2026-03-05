@@ -6,6 +6,7 @@ import { useStore } from '@/store/useStore'
 
 export default function LiveTrades() {
   const { addToast, addAuditEntry, auth } = useStore()
+  const [confirmDialog, setConfirmDialog] = useState<{ type: 'approve' | 'reject'; proposal: typeof pendingProposals[0] } | null>(null)
 
   const [positions] = useState([
     { id: 'pos-1', ticker: 'PLTR', quantity: 150, entry_price: 24.30, current_price: 27.85, unrealized_pnl: 532.50, strategy: 'WSB Steady Accumulator v3', change_pct: 14.6 },
@@ -44,15 +45,25 @@ export default function LiveTrades() {
   const totalUnrealizedPnl = positions.reduce((sum, p) => sum + p.unrealized_pnl, 0)
 
   const handleApprove = (proposal: typeof pendingProposals[0]) => {
-    setPendingProposals(prev => prev.filter(p => p.id !== proposal.id))
-    addToast({ type: 'success', title: `${proposal.action.toUpperCase()} Approved`, message: `${proposal.quantity} $${proposal.ticker} @ $${proposal.price}` })
-    addAuditEntry({ user: auth.user?.name || 'system', action: `Approved ${proposal.action.toUpperCase()} ${proposal.quantity} $${proposal.ticker} @ $${proposal.price}`, category: 'trade', severity: 'info' })
+    setConfirmDialog({ type: 'approve', proposal })
   }
 
   const handleReject = (proposal: typeof pendingProposals[0]) => {
+    setConfirmDialog({ type: 'reject', proposal })
+  }
+
+  const confirmAction = () => {
+    if (!confirmDialog) return
+    const { type, proposal } = confirmDialog
     setPendingProposals(prev => prev.filter(p => p.id !== proposal.id))
-    addToast({ type: 'warning', title: 'Trade Rejected', message: `$${proposal.ticker}` })
-    addAuditEntry({ user: auth.user?.name || 'system', action: `Rejected ${proposal.action.toUpperCase()} $${proposal.ticker}`, category: 'trade', severity: 'warning' })
+    if (type === 'approve') {
+      addToast({ type: 'success', title: `${proposal.action.toUpperCase()} Approved`, message: `${proposal.quantity} $${proposal.ticker} @ $${proposal.price}` })
+      addAuditEntry({ user: auth.user?.name || 'system', action: `Approved ${proposal.action.toUpperCase()} ${proposal.quantity} $${proposal.ticker} @ $${proposal.price}`, category: 'trade', severity: 'info' })
+    } else {
+      addToast({ type: 'warning', title: 'Trade Rejected', message: `$${proposal.ticker}` })
+      addAuditEntry({ user: auth.user?.name || 'system', action: `Rejected ${proposal.action.toUpperCase()} $${proposal.ticker}`, category: 'trade', severity: 'warning' })
+    }
+    setConfirmDialog(null)
   }
 
   return (
@@ -165,6 +176,30 @@ export default function LiveTrades() {
           ))}
         </div>
       </div>
+
+      {/* Confirm Dialog */}
+      {confirmDialog && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmDialog(null)} />
+          <div className="relative bg-terminal-surface border border-terminal-border rounded-lg p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <h3 className={clsx('font-bold text-lg mb-2', confirmDialog.type === 'approve' ? 'text-terminal-green' : 'text-terminal-red')}>
+              {confirmDialog.type === 'approve' ? 'Confirm Trade Approval' : 'Confirm Rejection'}
+            </h3>
+            <p className="text-terminal-text text-sm mb-1">
+              {confirmDialog.proposal.action.toUpperCase()} {confirmDialog.proposal.quantity} <span className="text-terminal-green font-bold">${confirmDialog.proposal.ticker}</span> @ ${confirmDialog.proposal.price.toFixed(2)}
+            </p>
+            <p className="text-terminal-text-dim text-xs mb-4">
+              {confirmDialog.type === 'approve' ? 'This will execute the trade.' : 'This will discard the proposal.'}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setConfirmDialog(null)} className="btn-outline text-xs">Cancel</button>
+              <button onClick={confirmAction} className={clsx('text-xs font-bold px-4 py-2 rounded', confirmDialog.type === 'approve' ? 'btn-primary' : 'btn-danger')}>
+                {confirmDialog.type === 'approve' ? 'Approve' : 'Reject'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
