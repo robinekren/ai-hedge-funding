@@ -27,7 +27,9 @@ export default function OwnerControls() {
   const [emergencyConfirm, setEmergencyConfirm] = useState(false)
   const [limitInput, setLimitInput] = useState(dailyLossLimit.toString())
   const [limitSaved, setLimitSaved] = useState(false)
+  const [limitConfirm, setLimitConfirm] = useState(false)
   const [phaseConfirmTarget, setPhaseConfirmTarget] = useState<string | null>(null)
+  const [deployConfirm, setDeployConfirm] = useState<string | null>(null)
 
   const agents = Object.keys(AGENT_NAMES)
 
@@ -64,6 +66,10 @@ export default function OwnerControls() {
   }
 
   const handleSetLimit = () => {
+    setLimitConfirm(true)
+  }
+
+  const confirmSetLimit = () => {
     const val = parseFloat(limitInput)
     if (!isNaN(val) && val > 0) {
       setDailyLossLimit(val)
@@ -71,6 +77,7 @@ export default function OwnerControls() {
       addToast({ type: 'success', title: 'Loss Limit Updated', message: `New limit: $${val.toLocaleString()}` })
       setTimeout(() => setLimitSaved(false), 2000)
     }
+    setLimitConfirm(false)
   }
 
   const toggleAgent = (agent: string) => {
@@ -256,16 +263,34 @@ export default function OwnerControls() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    addToast({ type: 'success', title: 'Strategy Deployed', message: strat.name })
-                    addAuditEntry({ user: auth.user?.name || 'system', action: `Deployed strategy: ${strat.name}`, category: 'trade', severity: 'info' })
-                  }}
-                  className="btn-primary text-xs"
-                >
-                  Deploy
-                </button>
-                <button className="btn-outline text-xs">Reject</button>
+                {deployConfirm === strat.name ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        addToast({ type: 'success', title: 'Strategy Deployed', message: strat.name })
+                        addAuditEntry({ user: auth.user?.name || 'system', action: `Deployed strategy: ${strat.name}`, category: 'trade', severity: 'info' })
+                        setDeployConfirm(null)
+                      }}
+                      className="btn-primary text-xs"
+                    >
+                      Confirm
+                    </button>
+                    <button onClick={() => setDeployConfirm(null)} className="btn-outline text-xs">Cancel</button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => setDeployConfirm(strat.name)} className="btn-primary text-xs">Deploy</button>
+                    <button
+                      onClick={() => {
+                        addToast({ type: 'warning', title: 'Strategy Rejected', message: strat.name })
+                        addAuditEntry({ user: auth.user?.name || 'system', action: `Rejected strategy: ${strat.name}`, category: 'trade', severity: 'warning' })
+                      }}
+                      className="btn-outline text-xs"
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}
@@ -278,25 +303,51 @@ export default function OwnerControls() {
           <h3 className="text-terminal-red text-sm font-bold mb-4">EMERGENCY STOP</h3>
           <p className="text-xs text-terminal-text-dim mb-2">Immediately close ALL open trades and halt ALL execution.</p>
           <p className="text-xs text-terminal-text-muted mb-4">Currently: 12 open positions, $116,480 invested, {runningCount} agents running.</p>
-          {!emergencyConfirm ? (
-            <button onClick={() => setEmergencyConfirm(true)} className="btn-danger">Initiate Emergency Stop</button>
-          ) : (
-            <div className="space-y-3">
-              <div className="bg-terminal-red/10 border border-terminal-red/30 rounded p-3">
-                <p className="text-terminal-red text-sm font-bold">WARNING: This will:</p>
-                <ul className="text-terminal-text-dim text-xs mt-2 space-y-1 list-disc list-inside">
-                  <li>Close all 12 open positions at market price</li>
-                  <li>Cancel all pending proposals</li>
-                  <li>Pause all 8 AI agents</li>
-                  <li>Send emergency notification</li>
-                </ul>
-              </div>
-              <div className="flex items-center gap-3">
-                <button onClick={handleEmergencyStop} className="btn-danger">CONFIRM EMERGENCY STOP</button>
-                <button onClick={() => setEmergencyConfirm(false)} className="btn-outline text-xs">Cancel</button>
-              </div>
+          <button onClick={() => setEmergencyConfirm(true)} className="btn-danger">Initiate Emergency Stop</button>
+        </div>
+      )}
+
+      {/* Emergency Stop Confirm Modal */}
+      {emergencyConfirm && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setEmergencyConfirm(false)} />
+          <div className="relative bg-terminal-surface border-2 border-terminal-red rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl shadow-red-glow">
+            <h3 className="text-terminal-red font-bold text-xl mb-4">EMERGENCY STOP</h3>
+            <div className="bg-terminal-red/10 border border-terminal-red/30 rounded p-4 mb-6">
+              <p className="text-terminal-red text-sm font-bold mb-3">This will immediately:</p>
+              <ul className="text-terminal-text-dim text-sm space-y-2 list-disc list-inside">
+                <li>Close all 12 open positions at market price</li>
+                <li>Cancel all pending trade proposals</li>
+                <li>Pause all 8 AI agents</li>
+                <li>Send emergency notification to all owners</li>
+              </ul>
             </div>
-          )}
+            <p className="text-terminal-text-muted text-xs mb-6">This action can be reversed from the controls panel.</p>
+            <div className="flex items-center gap-4">
+              <button onClick={handleEmergencyStop} className="btn-danger flex-1 py-3 text-base">CONFIRM EMERGENCY STOP</button>
+              <button onClick={() => setEmergencyConfirm(false)} className="btn-outline flex-1 py-3">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loss Limit Confirm Modal */}
+      {limitConfirm && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setLimitConfirm(false)} />
+          <div className="relative bg-terminal-surface border border-terminal-border rounded-lg p-6 max-w-sm w-full mx-4 shadow-2xl">
+            <h3 className="text-terminal-amber font-bold text-lg mb-2">Confirm Loss Limit Change</h3>
+            <p className="text-terminal-text text-sm mb-1">
+              New limit: <span className="text-terminal-green font-bold">${parseFloat(limitInput).toLocaleString()}</span>
+            </p>
+            <p className="text-terminal-text-dim text-xs mb-4">
+              Previous: ${dailyLossLimit.toLocaleString()}. The kill switch will trigger at this new threshold.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setLimitConfirm(false)} className="btn-outline text-xs">Cancel</button>
+              <button onClick={confirmSetLimit} className="btn-primary text-xs">Confirm</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

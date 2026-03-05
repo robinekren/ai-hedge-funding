@@ -89,6 +89,13 @@ interface AppState {
   emergencyActive: boolean
   setEmergencyActive: (active: boolean) => void
 
+  // Ticker Modal
+  selectedTicker: string | null
+  setSelectedTicker: (ticker: string | null) => void
+
+  // Toasts bulk
+  clearAllToasts: () => void
+
   // Connection
   backendConnected: boolean
   setBackendConnected: (connected: boolean) => void
@@ -284,6 +291,13 @@ export const useStore = create<AppState>()(
           })
         }
       },
+
+      // ─── Ticker Modal ──────────────────────────────────────────
+      selectedTicker: null,
+      setSelectedTicker: (ticker) => set({ selectedTicker: ticker }),
+
+      // ─── Toasts bulk ─────────────────────────────────────────
+      clearAllToasts: () => set({ toasts: [] }),
 
       // ─── Connection ────────────────────────────────────────────
       backendConnected: false,

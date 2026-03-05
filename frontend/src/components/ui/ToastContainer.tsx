@@ -34,12 +34,20 @@ const COLORS: Record<string, { bg: string; border: string; icon: string }> = {
 }
 
 export default function ToastContainer() {
-  const { toasts, removeToast } = useStore()
+  const { toasts, removeToast, clearAllToasts } = useStore()
 
   if (toasts.length === 0) return null
 
   return (
     <div className="fixed top-4 right-4 z-[100] space-y-2 max-w-sm w-full pointer-events-none">
+      {toasts.length > 2 && (
+        <button
+          onClick={clearAllToasts}
+          className="pointer-events-auto text-terminal-text-muted hover:text-terminal-text text-[10px] ml-auto block px-2 py-0.5 bg-terminal-surface border border-terminal-border rounded"
+        >
+          Clear all ({toasts.length})
+        </button>
+      )}
       {toasts.map((toast) => {
         const colors = COLORS[toast.type] || COLORS.info
         return (

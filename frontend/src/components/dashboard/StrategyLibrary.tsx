@@ -40,6 +40,7 @@ export default function StrategyLibrary() {
 
   const [filter, setFilter] = useState('all')
   const [backtestRunning, setBacktestRunning] = useState(false)
+  const [selectedStrategy, setSelectedStrategy] = useState<typeof strategies[0] | null>(null)
 
   const filtered = strategies.filter(s => {
     if (filter === 'active') return s.is_active
@@ -196,7 +197,7 @@ export default function StrategyLibrary() {
             </thead>
             <tbody>
               {filtered.map((s, i) => (
-                <tr key={s.id} className="border-b border-terminal-border/50 hover:bg-terminal-green/5">
+                <tr key={s.id} className="border-b border-terminal-border/50 hover:bg-terminal-green/5 cursor-pointer" onClick={() => setSelectedStrategy(s)}>
                   <td className="py-2 text-terminal-text-muted text-xs">{i + 1}</td>
                   <td className="py-2 text-terminal-text">{s.name}</td>
                   <td className="py-2 text-center">
@@ -228,6 +229,66 @@ export default function StrategyLibrary() {
           </table>
         </div>
       </div>
+
+      {/* Strategy Detail Modal */}
+      {selectedStrategy && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedStrategy(null)} />
+          <div className="relative bg-terminal-surface border border-terminal-border rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-terminal-green font-bold text-lg">{selectedStrategy.name}</h3>
+              <button onClick={() => setSelectedStrategy(null)} className="text-terminal-text-muted hover:text-terminal-text text-lg">✕</button>
+            </div>
+
+            <div className="flex items-center gap-2 mb-4">
+              <span className={clsx('text-xs px-2 py-0.5 rounded',
+                selectedStrategy.is_active ? 'bg-terminal-green/20 text-terminal-green' : 'bg-terminal-text-muted/20 text-terminal-text-muted'
+              )}>
+                {selectedStrategy.is_active ? 'LIVE' : 'BACKTEST'}
+              </span>
+              <span className="text-terminal-text-dim text-xs">{selectedStrategy.asset_class}</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="bg-terminal-bg rounded p-3">
+                <p className="text-[10px] text-terminal-text-muted uppercase">Win Rate</p>
+                <p className={clsx('text-lg font-bold', selectedStrategy.win_rate >= 0.9 ? 'text-terminal-green' : 'text-terminal-text')}>
+                  {(selectedStrategy.win_rate * 100).toFixed(1)}%
+                </p>
+              </div>
+              <div className="bg-terminal-bg rounded p-3">
+                <p className="text-[10px] text-terminal-text-muted uppercase">Total Return</p>
+                <p className="text-lg font-bold text-terminal-green">+{(selectedStrategy.total_return * 100).toFixed(1)}%</p>
+              </div>
+              <div className="bg-terminal-bg rounded p-3">
+                <p className="text-[10px] text-terminal-text-muted uppercase">Sharpe Ratio</p>
+                <p className={clsx('text-lg font-bold', selectedStrategy.sharpe_ratio >= 2.5 ? 'text-terminal-green' : 'text-terminal-text')}>
+                  {selectedStrategy.sharpe_ratio.toFixed(2)}
+                </p>
+              </div>
+              <div className="bg-terminal-bg rounded p-3">
+                <p className="text-[10px] text-terminal-text-muted uppercase">Total Trades</p>
+                <p className="text-lg font-bold text-terminal-text">{selectedStrategy.total_trades}</p>
+              </div>
+            </div>
+
+            <div className="text-xs space-y-1 text-terminal-text-dim">
+              <div className="flex justify-between">
+                <span>Capital Allocated</span>
+                <span className="text-terminal-text">{selectedStrategy.capital > 0 ? `$${selectedStrategy.capital.toLocaleString()}` : 'None'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Risk per Trade</span>
+                <span className="text-terminal-text">1-2% of allocated capital</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Signal Source</span>
+                <span className="text-terminal-text">Reddit inverted signal logic</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

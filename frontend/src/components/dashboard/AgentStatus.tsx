@@ -24,7 +24,7 @@ const STATUS_STYLES: Record<string, { color: string; label: string }> = {
 }
 
 export default function AgentStatus() {
-  const { agentStates } = useStore()
+  const { agentStates, setAgentState, addToast } = useStore()
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
 
   const [agents] = useState([
@@ -185,6 +185,21 @@ export default function AgentStatus() {
                     status === 'paused' ? 'bg-terminal-amber' : 'bg-terminal-text-muted'
                   )} />
                   <span className={clsx('text-xs font-bold', statusStyle.color)}>{statusStyle.label}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      const newState = status === 'running' ? 'paused' : 'running'
+                      setAgentState(agent.role, newState)
+                      addToast({ type: newState === 'paused' ? 'warning' : 'success', title: `${info.name} ${newState === 'paused' ? 'Paused' : 'Started'}` })
+                    }}
+                    className={clsx('text-[10px] px-2 py-0.5 rounded font-bold ml-1',
+                      status === 'running'
+                        ? 'bg-terminal-amber/20 text-terminal-amber hover:bg-terminal-amber/30'
+                        : 'bg-terminal-green/20 text-terminal-green hover:bg-terminal-green/30'
+                    )}
+                  >
+                    {status === 'running' ? 'Pause' : 'Start'}
+                  </button>
                 </div>
               </div>
 

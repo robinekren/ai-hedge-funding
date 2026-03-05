@@ -20,6 +20,7 @@ export default function CommandPalette() {
     toggleTheme,
     theme,
     logout,
+    setSelectedTicker,
   } = useStore()
 
   const [query, setQuery] = useState('')
@@ -41,9 +42,9 @@ export default function CommandPalette() {
     // Ticker search
     ...['PLTR', 'SOFI', 'NVDA', 'AMD', 'RIVN', 'TSLA', 'META', 'AAPL', 'MARA', 'COIN', 'RKLB', 'IONQ'].map(t => ({
       id: `ticker-${t}`,
-      label: `$${t} — View Position`,
+      label: `$${t} — View Details`,
       category: 'Tickers',
-      action: () => setActiveScreen('trades'),
+      action: () => setSelectedTicker(t),
     })),
   ]
 

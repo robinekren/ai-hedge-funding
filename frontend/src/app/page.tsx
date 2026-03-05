@@ -10,6 +10,7 @@ import CommandPalette from '@/components/ui/CommandPalette'
 import Onboarding from '@/components/ui/Onboarding'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import ConnectionBanner from '@/components/ui/ConnectionBanner'
+import TickerModal from '@/components/ui/TickerModal'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import PortfolioOverview from '@/components/dashboard/PortfolioOverview'
 import LiveTrades from '@/components/dashboard/LiveTrades'
@@ -32,6 +33,8 @@ export default function Dashboard() {
     onboardingComplete,
     commandPaletteOpen,
     setCommandPaletteOpen,
+    selectedTicker,
+    setSelectedTicker,
   } = useStore()
 
   // WebSocket connection
@@ -121,6 +124,7 @@ export default function Dashboard() {
 
       <ToastContainer />
       <CommandPalette />
+      <TickerModal ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />
       {!onboardingComplete && <Onboarding />}
     </div>
   )

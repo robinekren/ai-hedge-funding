@@ -5,7 +5,7 @@ import { clsx } from 'clsx'
 import { useStore } from '@/store/useStore'
 
 export default function LiveTrades() {
-  const { addToast, addAuditEntry, auth } = useStore()
+  const { addToast, addAuditEntry, auth, setSelectedTicker } = useStore()
   const [confirmDialog, setConfirmDialog] = useState<{ type: 'approve' | 'reject'; proposal: typeof pendingProposals[0] } | null>(null)
 
   const [positions] = useState([
@@ -134,7 +134,7 @@ export default function LiveTrades() {
             </thead>
             <tbody>
               {positions.map((pos) => (
-                <tr key={pos.id} className="border-b border-terminal-border/50 hover:bg-terminal-green/5">
+                <tr key={pos.id} className="border-b border-terminal-border/50 hover:bg-terminal-green/5 cursor-pointer" onClick={() => setSelectedTicker(pos.ticker)}>
                   <td className="py-2 text-terminal-green font-bold">${pos.ticker}</td>
                   <td className="py-2 text-right text-terminal-text">{pos.quantity}</td>
                   <td className="py-2 text-right text-terminal-text-dim">${pos.entry_price.toFixed(2)}</td>

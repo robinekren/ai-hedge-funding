@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { clsx } from 'clsx'
 import { useStore } from '@/store/useStore'
 
@@ -24,6 +25,7 @@ interface SidebarProps {
 
 export default function Sidebar({ activeScreen, onNavigate, isOpen, onToggle }: SidebarProps) {
   const { auth, logout, theme, toggleTheme } = useStore()
+  const [logoutConfirm, setLogoutConfirm] = useState(false)
   let currentSection = ''
 
   return (
@@ -114,12 +116,19 @@ export default function Sidebar({ activeScreen, onNavigate, isOpen, onToggle }: 
                 <p className="text-terminal-green text-xs font-bold">{auth.user?.name || 'Guest'}</p>
                 <p className="text-terminal-text-muted text-[10px]">{auth.user?.role === 'owner' ? 'Owner' : 'Investor'}</p>
               </div>
-              <button
-                onClick={logout}
-                className="text-terminal-text-muted hover:text-terminal-red text-xs transition-colors"
-              >
-                Sign out
-              </button>
+              {logoutConfirm ? (
+                <div className="flex items-center gap-1">
+                  <button onClick={logout} className="text-terminal-red text-xs font-bold">Confirm</button>
+                  <button onClick={() => setLogoutConfirm(false)} className="text-terminal-text-muted text-xs">Cancel</button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setLogoutConfirm(true)}
+                  className="text-terminal-text-muted hover:text-terminal-red text-xs transition-colors"
+                >
+                  Sign out
+                </button>
+              )}
             </div>
 
             <p className="text-terminal-text-muted text-[10px]">Ctrl+K: Command Palette</p>

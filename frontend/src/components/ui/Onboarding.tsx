@@ -19,8 +19,9 @@ const STEPS = [
 export default function Onboarding() {
   const { onboardingStep, setOnboardingStep, setOnboardingComplete, setActiveScreen } = useStore()
 
-  const step = STEPS[onboardingStep]
-  const isLast = onboardingStep === STEPS.length - 1
+  const safeStep = Math.min(Math.max(onboardingStep, 0), STEPS.length - 1)
+  const step = STEPS[safeStep]
+  const isLast = safeStep === STEPS.length - 1
 
   const handleNext = () => {
     if (isLast) {
@@ -50,7 +51,7 @@ export default function Onboarding() {
               key={i}
               className={clsx(
                 'h-1 flex-1 rounded-full transition-colors',
-                i <= onboardingStep ? 'bg-terminal-green' : 'bg-terminal-border'
+                i <= safeStep ? 'bg-terminal-green' : 'bg-terminal-border'
               )}
             />
           ))}
@@ -68,7 +69,7 @@ export default function Onboarding() {
           </button>
           <div className="flex items-center gap-3">
             <span className="text-terminal-text-muted text-xs">
-              {onboardingStep + 1}/{STEPS.length}
+              {safeStep + 1}/{STEPS.length}
             </span>
             <button onClick={handleNext} className="btn-primary text-sm">
               {isLast ? 'Get Started' : 'Next'}

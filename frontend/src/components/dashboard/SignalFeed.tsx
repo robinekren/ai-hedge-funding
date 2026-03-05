@@ -23,7 +23,7 @@ const SIGNAL_LABELS: Record<string, string> = {
  * Live Reddit signals — what the system is watching right now.
  */
 export default function SignalFeed() {
-  const { addToast, addAuditEntry } = useStore()
+  const { addToast, addAuditEntry, setSelectedTicker } = useStore()
   const alertedRef = useRef<Set<string>>(new Set())
 
   const [signals] = useState([
@@ -158,10 +158,11 @@ export default function SignalFeed() {
           {signals.map((signal) => (
             <div
               key={signal.id}
+              onClick={() => setSelectedTicker(signal.ticker)}
               className={clsx(
-                'flex items-center justify-between py-3 border-b border-terminal-border/50',
-                signal.signal_type === 'spike' && 'bg-terminal-red/5 -mx-3 px-3 rounded',
-                signal.signal_type === 'mass_excitement' && 'bg-terminal-red/5 -mx-3 px-3 rounded',
+                'flex items-center justify-between py-3 border-b border-terminal-border/50 cursor-pointer hover:bg-terminal-green/5',
+                signal.signal_type === 'spike' && 'bg-terminal-red/5 -mx-3 px-3 rounded hover:bg-terminal-red/10',
+                signal.signal_type === 'mass_excitement' && 'bg-terminal-red/5 -mx-3 px-3 rounded hover:bg-terminal-red/10',
               )}
             >
               <div className="flex items-center gap-3">
