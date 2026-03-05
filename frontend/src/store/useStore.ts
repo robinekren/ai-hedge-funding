@@ -217,9 +217,9 @@ export const useStore = create<AppState>()(
       funds: [
         {
           id: 'fund_default',
-          name: 'AI Hedge Funding',
+          name: 'Sheikh Robin Felix',
           color: '#00ff88',
-          starting_capital: 100000,
+          starting_capital: 1000,
           phase: 'phase_1',
           execution_mode: 'supervised',
           daily_loss_limit: 1000,
