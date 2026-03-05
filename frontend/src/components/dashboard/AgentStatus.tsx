@@ -192,13 +192,13 @@ export default function AgentStatus() {
                       setAgentState(agent.role, newState)
                       addToast({ type: newState === 'paused' ? 'warning' : 'success', title: `${info.name} ${newState === 'paused' ? 'Paused' : 'Started'}` })
                     }}
-                    className={clsx('text-[10px] px-2 py-0.5 rounded font-bold ml-1',
+                    className={clsx('text-xs px-3 py-1 rounded font-bold ml-2 border',
                       status === 'running'
-                        ? 'bg-terminal-amber/20 text-terminal-amber hover:bg-terminal-amber/30'
-                        : 'bg-terminal-green/20 text-terminal-green hover:bg-terminal-green/30'
+                        ? 'bg-terminal-amber/20 text-terminal-amber border-terminal-amber/40 hover:bg-terminal-amber/30'
+                        : 'bg-terminal-green/20 text-terminal-green border-terminal-green/40 hover:bg-terminal-green/30'
                     )}
                   >
-                    {status === 'running' ? 'Pause' : 'Start'}
+                    {status === 'running' ? '⏸ Pause' : '▶ Start'}
                   </button>
                 </div>
               </div>
