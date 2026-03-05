@@ -11,31 +11,29 @@ import { useStore } from '@/store/useStore'
 export default function PortfolioOverview() {
   const { activeFundId, funds } = useStore()
   const activeFund = funds.find(f => f.id === activeFundId)
-  const [portfolio] = useState({
-    total_value: 134720,
-    cash: 18240,
-    invested: 116480,
-    total_return_pct: 34.72,
-    daily_pnl: 1847.33,
-    positions_count: 12,
-    strategies_active: 23,
-  })
 
   const [timeframe, setTimeframe] = useState<'7d' | '30d' | '90d' | '1y'>('30d')
   const [chartExpanded, setChartExpanded] = useState(false)
 
-  const equityCurve = [
-    { day: 'D1', value: 100000 }, { day: 'D2', value: 100430 }, { day: 'D3', value: 101280 },
-    { day: 'D4', value: 101050 }, { day: 'D5', value: 102310 }, { day: 'D6', value: 103740 },
-    { day: 'D7', value: 103500 }, { day: 'D8', value: 104890 }, { day: 'D9', value: 106120 },
-    { day: 'D10', value: 105680 }, { day: 'D11', value: 107430 }, { day: 'D12', value: 108910 },
-    { day: 'D13', value: 109560 }, { day: 'D14', value: 110200 }, { day: 'D15', value: 112340 },
-    { day: 'D16', value: 111870 }, { day: 'D17', value: 113650 }, { day: 'D18', value: 115290 },
-    { day: 'D19', value: 116800 }, { day: 'D20', value: 116120 }, { day: 'D21', value: 118470 },
-    { day: 'D22', value: 120130 }, { day: 'D23', value: 121890 }, { day: 'D24', value: 123450 },
-    { day: 'D25', value: 122780 }, { day: 'D26', value: 125670 }, { day: 'D27', value: 128340 },
-    { day: 'D28', value: 130100 }, { day: 'D29', value: 132870 }, { day: 'D30', value: 134720 },
-  ]
+  // ─── Per-fund portfolio data ─────────────────────────────────────
+  const PORTFOLIO_DATA: Record<string, { total_value: number; cash: number; invested: number; total_return_pct: number; daily_pnl: number; positions_count: number; strategies_active: number }> = {
+    fund_default: { total_value: 134720, cash: 18240, invested: 116480, total_return_pct: 34.72, daily_pnl: 1847.33, positions_count: 12, strategies_active: 23 },
+    fund_sheikh_a: { total_value: 8305080, cash: 1247000, invested: 7058080, total_return_pct: 41.28, daily_pnl: 94210, positions_count: 28, strategies_active: 23 },
+    fund_sheikh_b: { total_value: 13943250, cash: 2410000, invested: 11533250, total_return_pct: 22.65, daily_pnl: 128470, positions_count: 35, strategies_active: 23 },
+    fund_sheikh_c: { total_value: 31340830, cash: 5680000, invested: 25660830, total_return_pct: 12.84, daily_pnl: 287630, positions_count: 42, strategies_active: 23 },
+  }
+
+  const portfolio = PORTFOLIO_DATA[activeFundId || 'fund_default'] || PORTFOLIO_DATA.fund_default
+  const startCapital = activeFund?.starting_capital || 100000
+
+  // Generate equity curve scaled to fund size
+  const baseMultipliers = [1.000, 1.004, 1.013, 1.011, 1.023, 1.037, 1.035, 1.049, 1.061, 1.057, 1.074, 1.089, 1.096, 1.102, 1.123, 1.119, 1.137, 1.153, 1.168, 1.161, 1.185, 1.201, 1.219, 1.235, 1.228, 1.257, 1.283, 1.301, 1.329, 1.000]
+  // Last value is the actual return ratio
+  baseMultipliers[29] = portfolio.total_value / startCapital
+  const equityCurve = baseMultipliers.map((m, i) => ({
+    day: `D${i + 1}`,
+    value: Math.round(startCapital * (i === 29 ? m : m + (m - 1) * ((portfolio.total_return_pct / 34.72) - 1) * 0.5)),
+  }))
 
   const sectorExposure = [
     { name: 'Technology', value: 42200, pct: 36.2, color: '#00ff88' },
@@ -47,7 +45,7 @@ export default function PortfolioOverview() {
   ]
 
   const benchmarkData = [
-    { name: 'AI Hedge Fund', value: 34.72, fill: '#00ff88' },
+    { name: 'AI Hedge Fund', value: portfolio.total_return_pct, fill: '#00ff88' },
     { name: 'S&P 500', value: 8.2, fill: '#555555' },
     { name: 'NASDAQ', value: 12.4, fill: '#888888' },
     { name: 'Top HFs avg', value: 5.8, fill: '#333333' },
@@ -79,7 +77,7 @@ export default function PortfolioOverview() {
           <p className="text-terminal-text-muted text-[10px]">{label}</p>
           <p className="text-terminal-green font-bold text-sm">${payload[0].value.toLocaleString()}</p>
           <p className="text-terminal-green text-[10px]">
-            +${(payload[0].value - 100000).toLocaleString()} ({((payload[0].value - 100000) / 1000).toFixed(1)}%)
+            +${(payload[0].value - startCapital).toLocaleString()} ({(((payload[0].value - startCapital) / startCapital) * 100).toFixed(1)}%)
           </p>
         </div>
       )
@@ -169,8 +167,8 @@ export default function PortfolioOverview() {
           </ResponsiveContainer>
         </div>
         <div className="flex justify-between mt-2 text-terminal-text-muted text-[10px]">
-          <span>$100,000 — Start</span>
-          <span className="text-terminal-green font-bold">+${(portfolio.total_value - 100000).toLocaleString()} ({portfolio.total_return_pct}%)</span>
+          <span>${startCapital.toLocaleString()} — Start</span>
+          <span className="text-terminal-green font-bold">+${(portfolio.total_value - startCapital).toLocaleString()} ({portfolio.total_return_pct}%)</span>
           <span>${portfolio.total_value.toLocaleString()} — Today</span>
         </div>
       </div>
@@ -246,7 +244,7 @@ export default function PortfolioOverview() {
             </ResponsiveContainer>
           </div>
           <p className="text-[10px] text-terminal-text-muted mt-2">
-            Alpha over S&P 500: <span className="text-terminal-green font-bold">+{(34.72 - 8.2).toFixed(1)}%</span>
+            Alpha over S&P 500: <span className="text-terminal-green font-bold">+{(portfolio.total_return_pct - 8.2).toFixed(1)}%</span>
           </p>
         </div>
       </div>
