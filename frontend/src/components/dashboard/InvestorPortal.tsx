@@ -11,40 +11,116 @@ export default function InvestorPortal() {
   const isInvestor = auth.user?.role === 'investor'
   const [selectedLP, setSelectedLP] = useState(isInvestor ? 'lp_1' : 'all')
 
-  const lpData: Record<string, { name: string; investment: number; share: number; joinDate: string }> = {
-    robin: { name: 'Robin (GP)', investment: 50000, share: 50.0, joinDate: 'Oct 2025' },
-    felix: { name: 'Felix (GP)', investment: 30000, share: 30.0, joinDate: 'Oct 2025' },
-    lp_1: { name: 'LP Investor #1', investment: 15000, share: 15.0, joinDate: 'Nov 2025' },
-    lp_2: { name: 'LP Investor #2', investment: 5000, share: 5.0, joinDate: 'Jan 2026' },
+  // ─── Per-fund simulation data ─────────────────────────────────────
+  const FUND_DATA: Record<string, {
+    lpData: Record<string, { name: string; investment: number; share: number; joinDate: string }>
+    investorData: { total_fund_return: number; capital_deployed: number; initial_capital: number; monthly_performance: { month: string; return_pct: number; cumulative: number }[]; fees: { management_pct: number; carry_pct: number; total_fees_ytd: number; net_return_after_fees: number } }
+    capitalFlow: { date: string; inflow: number; outflow: number; nav: number }[]
+  }> = {
+    fund_default: {
+      lpData: {
+        robin: { name: 'Robin (GP)', investment: 50000, share: 50.0, joinDate: 'Oct 2025' },
+        felix: { name: 'Felix (GP)', investment: 30000, share: 30.0, joinDate: 'Oct 2025' },
+        lp_1: { name: 'LP Investor #1', investment: 15000, share: 15.0, joinDate: 'Nov 2025' },
+        lp_2: { name: 'LP Investor #2', investment: 5000, share: 5.0, joinDate: 'Jan 2026' },
+      },
+      investorData: {
+        total_fund_return: 34.72,
+        capital_deployed: 134720,
+        initial_capital: 100000,
+        monthly_performance: [
+          { month: 'Oct 2025', return_pct: 8.42, cumulative: 8.42 },
+          { month: 'Nov 2025', return_pct: 12.18, cumulative: 21.63 },
+          { month: 'Dec 2025', return_pct: -2.34, cumulative: 18.78 },
+          { month: 'Jan 2026', return_pct: 9.67, cumulative: 30.27 },
+          { month: 'Feb 2026', return_pct: 4.45, cumulative: 34.72 },
+        ],
+        fees: { management_pct: 3.0, carry_pct: 50.0, total_fees_ytd: 4812, net_return_after_fees: 29.90 },
+      },
+      capitalFlow: [
+        { date: 'Oct 2025', inflow: 100000, outflow: 0, nav: 108420 },
+        { date: 'Nov 2025', inflow: 15000, outflow: 0, nav: 137200 },
+        { date: 'Dec 2025', inflow: 0, outflow: 0, nav: 134000 },
+        { date: 'Jan 2026', inflow: 5000, outflow: 0, nav: 149200 },
+        { date: 'Feb 2026', inflow: 0, outflow: 14480, nav: 134720 },
+      ],
+    },
+    fund_sheikh_a: {
+      lpData: {
+        sheikh_a: { name: 'Sheikh Abdullah (LP)', investment: 5000000, share: 85.0, joinDate: 'Nov 2025' },
+        robin: { name: 'Robin (GP)', investment: 500000, share: 8.5, joinDate: 'Nov 2025' },
+        felix: { name: 'Felix (GP)', investment: 382500, share: 6.5, joinDate: 'Nov 2025' },
+      },
+      investorData: {
+        total_fund_return: 41.28,
+        capital_deployed: 8305080,
+        initial_capital: 5882500,
+        monthly_performance: [
+          { month: 'Nov 2025', return_pct: 11.34, cumulative: 11.34 },
+          { month: 'Dec 2025', return_pct: 6.82, cumulative: 18.93 },
+          { month: 'Jan 2026', return_pct: 14.21, cumulative: 35.83 },
+          { month: 'Feb 2026', return_pct: 5.45, cumulative: 41.28 },
+        ],
+        fees: { management_pct: 3.0, carry_pct: 50.0, total_fees_ytd: 287400, net_return_after_fees: 35.62 },
+      },
+      capitalFlow: [
+        { date: 'Nov 2025', inflow: 5882500, outflow: 0, nav: 6549560 },
+        { date: 'Dec 2025', inflow: 0, outflow: 0, nav: 6996220 },
+        { date: 'Jan 2026', inflow: 0, outflow: 0, nav: 7990120 },
+        { date: 'Feb 2026', inflow: 0, outflow: 0, nav: 8305080 },
+      ],
+    },
+    fund_sheikh_b: {
+      lpData: {
+        sheikh_b: { name: 'Sheikh Rashid (LP)', investment: 10000000, share: 88.0, joinDate: 'Dec 2025' },
+        robin: { name: 'Robin (GP)', investment: 800000, share: 7.0, joinDate: 'Dec 2025' },
+        felix: { name: 'Felix (GP)', investment: 568000, share: 5.0, joinDate: 'Dec 2025' },
+      },
+      investorData: {
+        total_fund_return: 22.65,
+        capital_deployed: 13943250,
+        initial_capital: 11368000,
+        monthly_performance: [
+          { month: 'Dec 2025', return_pct: 3.18, cumulative: 3.18 },
+          { month: 'Jan 2026', return_pct: 11.42, cumulative: 14.96 },
+          { month: 'Feb 2026', return_pct: 7.69, cumulative: 22.65 },
+        ],
+        fees: { management_pct: 3.0, carry_pct: 50.0, total_fees_ytd: 412850, net_return_after_fees: 19.02 },
+      },
+      capitalFlow: [
+        { date: 'Dec 2025', inflow: 11368000, outflow: 0, nav: 11729430 },
+        { date: 'Jan 2026', inflow: 0, outflow: 0, nav: 13068540 },
+        { date: 'Feb 2026', inflow: 0, outflow: 500000, nav: 13943250 },
+      ],
+    },
+    fund_sheikh_c: {
+      lpData: {
+        sheikh_c: { name: 'Sheikh Mansour (LP)', investment: 25000000, share: 90.0, joinDate: 'Jan 2026' },
+        robin: { name: 'Robin (GP)', investment: 1500000, share: 5.4, joinDate: 'Jan 2026' },
+        felix: { name: 'Felix (GP)', investment: 1277000, share: 4.6, joinDate: 'Jan 2026' },
+      },
+      investorData: {
+        total_fund_return: 12.84,
+        capital_deployed: 31340830,
+        initial_capital: 27777000,
+        monthly_performance: [
+          { month: 'Jan 2026', return_pct: 7.52, cumulative: 7.52 },
+          { month: 'Feb 2026', return_pct: 5.32, cumulative: 12.84 },
+        ],
+        fees: { management_pct: 3.0, carry_pct: 50.0, total_fees_ytd: 524600, net_return_after_fees: 10.95 },
+      },
+      capitalFlow: [
+        { date: 'Jan 2026', inflow: 27777000, outflow: 0, nav: 29866290 },
+        { date: 'Feb 2026', inflow: 0, outflow: 0, nav: 31340830 },
+      ],
+    },
   }
 
-  const [investorData] = useState({
-    total_fund_return: 34.72,
-    capital_deployed: 134720,
-    initial_capital: 100000,
-    monthly_performance: [
-      { month: 'Oct 2025', return_pct: 8.42, cumulative: 8.42 },
-      { month: 'Nov 2025', return_pct: 12.18, cumulative: 21.63 },
-      { month: 'Dec 2025', return_pct: -2.34, cumulative: 18.78 },
-      { month: 'Jan 2026', return_pct: 9.67, cumulative: 30.27 },
-      { month: 'Feb 2026', return_pct: 4.45, cumulative: 34.72 },
-    ],
-    fees: {
-      management_pct: 3.0,
-      carry_pct: 50.0,
-      total_fees_ytd: 4812,
-      net_return_after_fees: 29.90,
-    },
-  })
-
-  // Capital flow data
-  const capitalFlow = [
-    { date: 'Oct 2025', inflow: 100000, outflow: 0, nav: 108420 },
-    { date: 'Nov 2025', inflow: 15000, outflow: 0, nav: 137200 },
-    { date: 'Dec 2025', inflow: 0, outflow: 0, nav: 134000 },
-    { date: 'Jan 2026', inflow: 5000, outflow: 0, nav: 149200 },
-    { date: 'Feb 2026', inflow: 0, outflow: 14480, nav: 134720 },
-  ]
+  // Get data for the active fund, fallback to default
+  const fundData = FUND_DATA[activeFundId || 'fund_default'] || FUND_DATA.fund_default
+  const lpData = fundData.lpData
+  const investorData = fundData.investorData
+  const capitalFlow = fundData.capitalFlow
 
   const handleExportPDF = () => {
     addToast({ type: 'info', title: 'Generating PDF Report', message: 'Monthly investor report for Feb 2026...' })

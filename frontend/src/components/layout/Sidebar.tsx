@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { clsx } from 'clsx'
 import { useStore } from '@/store/useStore'
+import AddInvestorModal from '@/components/ui/AddInvestorModal'
 
 const NAV_ITEMS = [
   { id: 'portfolio', label: 'Portfolio', icon: '[P]', section: 'Phase 1', shortcut: '1' },
@@ -27,6 +28,7 @@ export default function Sidebar({ activeScreen, onNavigate, isOpen, onToggle }: 
   const { auth, logout, theme, toggleTheme, funds, activeFundId, setActiveFund } = useStore()
   const [logoutConfirm, setLogoutConfirm] = useState(false)
   const [fundDropdownOpen, setFundDropdownOpen] = useState(false)
+  const [addInvestorOpen, setAddInvestorOpen] = useState(false)
   let currentSection = ''
 
   const activeFund = funds.find(f => f.id === activeFundId) || funds[0]
@@ -96,7 +98,7 @@ export default function Sidebar({ activeScreen, onNavigate, isOpen, onToggle }: 
 
             {/* Dropdown */}
             {fundDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-terminal-surface border border-terminal-border rounded-lg overflow-hidden z-50 shadow-lg shadow-black/50">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-terminal-surface border border-terminal-border rounded-lg overflow-hidden z-50 shadow-lg shadow-black/50 max-h-72 overflow-y-auto">
                 {funds.map((fund) => (
                   <button
                     key={fund.id}
@@ -106,7 +108,7 @@ export default function Sidebar({ activeScreen, onNavigate, isOpen, onToggle }: 
                     }}
                     className={clsx(
                       'w-full px-3 py-2.5 flex items-center gap-2.5 transition-colors text-left',
-                      'border-b border-terminal-border/50 last:border-b-0',
+                      'border-b border-terminal-border/50',
                       fund.id === activeFundId
                         ? 'bg-terminal-green/10'
                         : 'hover:bg-terminal-green/5'
@@ -134,6 +136,21 @@ export default function Sidebar({ activeScreen, onNavigate, isOpen, onToggle }: 
                     )}
                   </button>
                 ))}
+                {/* Add Investor */}
+                {auth.user?.role === 'owner' && (
+                  <button
+                    onClick={() => {
+                      setFundDropdownOpen(false)
+                      setAddInvestorOpen(true)
+                    }}
+                    className="w-full px-3 py-2.5 flex items-center gap-2.5 transition-colors text-left hover:bg-terminal-green/5"
+                  >
+                    <div className="w-4 h-4 rounded-full border border-dashed border-terminal-text-muted flex items-center justify-center flex-shrink-0">
+                      <span className="text-terminal-text-muted text-[10px] leading-none">+</span>
+                    </div>
+                    <span className="text-terminal-text-muted text-[11px] font-semibold">Add Investor</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -220,6 +237,8 @@ export default function Sidebar({ activeScreen, onNavigate, isOpen, onToggle }: 
           </div>
         )}
       </aside>
+
+      <AddInvestorModal open={addInvestorOpen} onClose={() => setAddInvestorOpen(false)} />
     </>
   )
 }

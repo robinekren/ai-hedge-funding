@@ -67,6 +67,8 @@ interface AppState {
   activeFundId: string | null
   setFunds: (funds: Fund[]) => void
   setActiveFund: (fundId: string) => void
+  addFund: (fund: Omit<Fund, 'id' | 'created_at'>) => void
+  removeFund: (fundId: string) => void
 
   // Navigation
   activeScreen: Screen
@@ -212,18 +214,56 @@ export const useStore = create<AppState>()(
       },
 
       // ─── Funds ──────────────────────────────────────────────────
-      funds: [{
-        id: 'fund_default',
-        name: 'AI Hedge Funding',
-        color: '#00ff88',
-        starting_capital: 100000,
-        phase: 'phase_1',
-        execution_mode: 'supervised',
-        daily_loss_limit: 1000,
-        max_position_size_pct: 0.05,
-        emergency_active: false,
-        created_at: new Date().toISOString(),
-      }],
+      funds: [
+        {
+          id: 'fund_default',
+          name: 'AI Hedge Funding',
+          color: '#00ff88',
+          starting_capital: 100000,
+          phase: 'phase_1',
+          execution_mode: 'supervised',
+          daily_loss_limit: 1000,
+          max_position_size_pct: 0.05,
+          emergency_active: false,
+          created_at: '2025-10-01T00:00:00.000Z',
+        },
+        {
+          id: 'fund_sheikh_a',
+          name: 'Sheikh Abdullah Fund',
+          color: '#ffd700',
+          starting_capital: 5000000,
+          phase: 'phase_2',
+          execution_mode: 'semi_autonomous',
+          daily_loss_limit: 50000,
+          max_position_size_pct: 0.03,
+          emergency_active: false,
+          created_at: '2025-11-15T00:00:00.000Z',
+        },
+        {
+          id: 'fund_sheikh_b',
+          name: 'Sheikh Rashid Fund',
+          color: '#00bfff',
+          starting_capital: 10000000,
+          phase: 'phase_1',
+          execution_mode: 'supervised',
+          daily_loss_limit: 100000,
+          max_position_size_pct: 0.02,
+          emergency_active: false,
+          created_at: '2025-12-01T00:00:00.000Z',
+        },
+        {
+          id: 'fund_sheikh_c',
+          name: 'Sheikh Mansour Fund',
+          color: '#ff6b9d',
+          starting_capital: 25000000,
+          phase: 'phase_1',
+          execution_mode: 'supervised',
+          daily_loss_limit: 250000,
+          max_position_size_pct: 0.02,
+          emergency_active: false,
+          created_at: '2026-01-10T00:00:00.000Z',
+        },
+      ],
       activeFundId: 'fund_default',
       setFunds: (funds) => {
         set({ funds })
@@ -231,6 +271,35 @@ export const useStore = create<AppState>()(
         const state = get()
         if (!funds.find(f => f.id === state.activeFundId) && funds.length > 0) {
           set({ activeFundId: funds[0].id })
+        }
+      },
+      addFund: (fund) => {
+        const id = `fund_${Date.now()}`
+        const newFund: Fund = { ...fund, id, created_at: new Date().toISOString() }
+        set((s) => ({ funds: [...s.funds, newFund] }))
+        set({ activeFundId: id })
+        get().addToast({ type: 'success', title: 'Investor Added', message: `${fund.name} — $${fund.starting_capital.toLocaleString()}` })
+        get().addAuditEntry({
+          user: get().auth.user?.name || 'system',
+          action: `New investor fund created: ${fund.name}`,
+          category: 'system',
+          severity: 'info',
+        })
+      },
+      removeFund: (fundId) => {
+        const fund = get().funds.find(f => f.id === fundId)
+        set((s) => ({ funds: s.funds.filter(f => f.id !== fundId) }))
+        if (get().activeFundId === fundId) {
+          const remaining = get().funds
+          if (remaining.length > 0) set({ activeFundId: remaining[0].id })
+        }
+        if (fund) {
+          get().addAuditEntry({
+            user: get().auth.user?.name || 'system',
+            action: `Investor fund removed: ${fund.name}`,
+            category: 'system',
+            severity: 'warning',
+          })
         }
       },
       setActiveFund: (fundId) => {
@@ -370,6 +439,7 @@ export const useStore = create<AppState>()(
       partialize: (state) => ({
         auth: state.auth,
         theme: state.theme,
+        funds: state.funds,
         activeFundId: state.activeFundId,
         onboardingComplete: state.onboardingComplete,
         currentPhase: state.currentPhase,
