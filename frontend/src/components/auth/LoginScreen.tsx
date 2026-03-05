@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { clsx } from 'clsx'
 import { useStore } from '@/store/useStore'
+import CandlestickVFX from '@/components/vfx/CandlestickVFX'
 
 export default function LoginScreen() {
   const { login, verify2FA, auth } = useStore()
@@ -49,8 +50,9 @@ export default function LoginScreen() {
   return (
     <div className="min-h-screen bg-terminal-bg flex items-center justify-center p-4 relative overflow-hidden">
       <div className="hf-bg animate" aria-hidden="true" />
+      <CandlestickVFX />
 
-      <div className="relative w-full max-w-md">
+      <div className="relative z-[2] w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-xl bg-terminal-green/20 flex items-center justify-center mx-auto mb-4 shadow-green-glow">
