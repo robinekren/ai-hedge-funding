@@ -4,45 +4,25 @@ import { useEffect, useRef, useCallback } from 'react'
 
 /* ─── CONFIG (tuning knobs) ─── */
 const CFG = {
-  /** Max candles alive at once (pool size) */
-  POOL_SIZE: 120,
-  /** Candles spawned per pointer event */
-  CLUSTER_SIZE: 3,
-  /** Min ms between spawns (~35 spawn/sec cap) */
-  SPAWN_THROTTLE_MS: 28,
-  /** Total lifetime in ms */
-  LIFETIME: 2000,
-  /** Phase durations (must sum ≤ LIFETIME) */
-  FADE_IN: 200,
-  HOLD: 1400,
-  FADE_OUT: 400,
-  /** Body width range */
-  BODY_W_MIN: 4,
-  BODY_W_MAX: 10,
-  /** Body height range */
-  BODY_H_MIN: 14,
-  BODY_H_MAX: 38,
-  /** Wick extends above/below body */
-  WICK_EXTEND_MIN: 4,
-  WICK_EXTEND_MAX: 14,
-  /** Wick line width */
-  WICK_WIDTH: 1.2,
-  /** Upward drift in px during lifetime */
+  POOL_SIZE: 40,
+  CLUSTER_SIZE: 1,
+  SPAWN_THROTTLE_MS: 50,
+  LIFETIME: 1200,
+  FADE_IN: 150,
+  HOLD: 700,
+  FADE_OUT: 350,
+  BODY_W_MIN: 8,
+  BODY_W_MAX: 16,
+  BODY_H_MIN: 24,
+  BODY_H_MAX: 56,
+  WICK_EXTEND_MIN: 8,
+  WICK_EXTEND_MAX: 22,
+  WICK_WIDTH: 1.8,
   DRIFT_MIN: 2,
-  DRIFT_MAX: 6,
-  /** Micro jitter amplitude in px */
-  JITTER: 0.4,
-  /** Base opacity of candle body */
-  BODY_OPACITY: 0.50,
-  /** Glow blur radius */
-  GLOW_RADIUS: 12,
-  /** Glow opacity multiplier */
-  GLOW_OPACITY: 0.10,
-  /** Spawn spread (random offset from cursor) */
-  SPREAD: 18,
-  /** Scanline gap in px (0 = disabled) */
-  SCANLINE_GAP: 4,
-  SCANLINE_ALPHA: 0.03,
+  DRIFT_MAX: 5,
+  JITTER: 0.3,
+  BODY_OPACITY: 0.45,
+  SPREAD: 14,
 } as const
 
 /* ─── TYPES ─── */
@@ -181,14 +161,6 @@ export default function CandlestickVFX() {
       const dpr = dprRef.current
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      // Optional scanlines
-      if (CFG.SCANLINE_GAP > 0) {
-        ctx.fillStyle = `rgba(0,0,0,${CFG.SCANLINE_ALPHA})`
-        for (let sy = 0; sy < canvas.height; sy += CFG.SCANLINE_GAP * dpr) {
-          ctx.fillRect(0, sy, canvas.width, 1 * dpr)
-        }
-      }
-
       for (let i = 0; i < pool.length; i++) {
         const c = pool[i]
         if (!c.alive) continue
@@ -202,25 +174,18 @@ export default function CandlestickVFX() {
         // Phase calculation
         let alpha = 1
         let scale = 1
-        let blur = 0
 
         if (age < CFG.FADE_IN) {
-          // Fade in
           const t = age / CFG.FADE_IN
           alpha = t
-          scale = lerp(0.3, 1, t * t) // ease-in-quad
+          scale = lerp(0.4, 1, t)
         } else if (age > CFG.FADE_IN + CFG.HOLD) {
-          // Fade out
           const t = (age - CFG.FADE_IN - CFG.HOLD) / CFG.FADE_OUT
-          alpha = 1 - t
-          blur = lerp(0, 2, t)
+          alpha = 1 - t * t
         }
 
-        // Drift (upward over lifetime)
         const lifeT = age / CFG.LIFETIME
         const driftY = -c.drift * lifeT
-
-        // Micro jitter during hold phase
         const jitterX = Math.sin(now * 0.003 + c.jitterSeed) * CFG.JITTER
         const jitterY = Math.cos(now * 0.004 + c.jitterSeed * 1.3) * CFG.JITTER
 
@@ -235,20 +200,13 @@ export default function CandlestickVFX() {
         const bodyColor = c.isGreen ? GREEN_BODY : RED_BODY
         const wickColor = c.isGreen ? GREEN_WICK : RED_WICK
         const bodyAlpha = CFG.BODY_OPACITY * alpha
-        const wickAlpha = Math.min(bodyAlpha * 1.3, 0.7)
+        const wickAlpha = Math.min(bodyAlpha * 1.4, 0.65)
 
-        // Apply blur during fade-out
-        if (blur > 0) {
-          ctx.filter = `blur(${blur * dpr}px)`
-        }
+        // Soft glow (wider, semi-transparent body behind)
+        ctx.fillStyle = rgba(bodyColor, bodyAlpha * 0.15)
+        ctx.fillRect(px - bw / 2 - 3 * dpr, py - bh / 2 - 2 * dpr, bw + 6 * dpr, bh + 4 * dpr)
 
-        // Glow (soft shadow behind candle)
-        ctx.shadowColor = rgba(bodyColor, CFG.GLOW_OPACITY * alpha)
-        ctx.shadowBlur = CFG.GLOW_RADIUS * dpr
-        ctx.shadowOffsetX = 0
-        ctx.shadowOffsetY = 4 * dpr
-
-        // Wick (thin vertical line)
+        // Wick
         ctx.strokeStyle = rgba(wickColor, wickAlpha)
         ctx.lineWidth = ww
         ctx.lineCap = 'round'
@@ -257,28 +215,17 @@ export default function CandlestickVFX() {
         ctx.lineTo(px, py + bh / 2 + wDown)
         ctx.stroke()
 
-        // Body (filled rectangle, centered)
+        // Body
         ctx.fillStyle = rgba(bodyColor, bodyAlpha)
         ctx.fillRect(px - bw / 2, py - bh / 2, bw, bh)
 
-        // Bright edge (top or bottom 1px highlight)
-        ctx.fillStyle = rgba(wickColor, bodyAlpha * 0.6)
-        const edgeH = Math.max(1 * dpr, bh * 0.06)
+        // Bright edge highlight
+        ctx.fillStyle = rgba(wickColor, bodyAlpha * 0.5)
+        const edgeH = Math.max(1 * dpr, bh * 0.07)
         if (c.isGreen) {
-          // Green candle: bright top edge
           ctx.fillRect(px - bw / 2, py - bh / 2, bw, edgeH)
         } else {
-          // Red candle: bright bottom edge
           ctx.fillRect(px - bw / 2, py + bh / 2 - edgeH, bw, edgeH)
-        }
-
-        // Reset shadow + filter
-        ctx.shadowColor = 'transparent'
-        ctx.shadowBlur = 0
-        ctx.shadowOffsetX = 0
-        ctx.shadowOffsetY = 0
-        if (blur > 0) {
-          ctx.filter = 'none'
         }
       }
     }
