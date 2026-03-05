@@ -27,18 +27,21 @@ export default function TopBar({ onMenuToggle }: TopBarProps) {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const res = await fetch('/api/dashboard/metrics')
+        const res = await fetch('http://localhost:8000/api/dashboard/metrics')
         if (res.ok) {
           const data = await res.json()
-          setMetrics(data)
+          // Only update if data has meaningful values (backend is running with real data)
+          if (data.aum > 0) {
+            setMetrics(data)
+          }
         }
       } catch {
-        // API not connected — using live demo data
+        // API not connected — using demo data from initial state
       }
     }
 
     fetchMetrics()
-    const interval = setInterval(fetchMetrics, 5000)
+    const interval = setInterval(fetchMetrics, 10000)
     return () => clearInterval(interval)
   }, [])
 
