@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  background-color: #0a0a0a;
+  color: #e0e0e0;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00ff88;
+}
+
+/* Green terminal glow effect */
+.glow-green {
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
+}
+.glow-red {
+  box-shadow: 0 0 20px rgba(255, 51, 85, 0.15);
+}
+
+/* Responsive container */
+@layer components {
+  .card {
+    @apply bg-terminal-surface border border-terminal-border rounded-lg p-4;
+  }
+  .metric-value {
+    @apply text-2xl font-bold font-mono;
+  }
+  .metric-label {
+    @apply text-xs text-terminal-text-dim uppercase tracking-wider;
+  }
+  .btn-primary {
+    @apply bg-terminal-green text-terminal-bg px-4 py-2 rounded font-mono font-bold
+           hover:bg-terminal-green-dim transition-colors text-sm;
+  }
+  .btn-danger {
+    @apply bg-terminal-red text-white px-4 py-2 rounded font-mono font-bold
+           hover:bg-terminal-red-dim transition-colors text-sm;
+  }
+  .btn-outline {
+    @apply border border-terminal-green text-terminal-green px-4 py-2 rounded font-mono
+           hover:bg-terminal-green-glow transition-colors text-sm;
+  }
+}
