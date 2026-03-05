@@ -97,3 +97,120 @@ html.light, html.light body {
            hover:bg-terminal-green-glow transition-colors text-sm;
   }
 }
+
+/* ===========================
+   TRILLIONAIRE HEDGE FUND BG
+   0 images · 4K-feel · 50% opacity
+   =========================== */
+.hf-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.50;
+  transform: translateZ(0);
+  will-change: transform;
+  background-color: #04070a;
+  background-image:
+    radial-gradient(70% 55% at 50% 45%, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.60) 72%, rgba(0,0,0,0.88) 100%),
+    radial-gradient(38% 30% at 70% 38%, rgba(16,185,129,0.22) 0%, rgba(16,185,129,0.00) 70%),
+    radial-gradient(32% 28% at 22% 70%, rgba(34,197,94,0.16) 0%, rgba(34,197,94,0.00) 75%),
+    linear-gradient(180deg, rgba(8,14,18,0.00) 0%, rgba(8,14,18,0.25) 35%, rgba(8,14,18,0.75) 100%),
+    linear-gradient(rgba(16,185,129,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16,185,129,0.06) 1px, transparent 1px),
+    linear-gradient(rgba(16,185,129,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16,185,129,0.05) 1px, transparent 1px),
+    repeating-linear-gradient(
+      90deg,
+      rgba(16,185,129,0.00) 0px, rgba(16,185,129,0.00) 14px,
+      rgba(16,185,129,0.06) 15px, rgba(16,185,129,0.00) 16px,
+      rgba(16,185,129,0.00) 34px
+    ),
+    repeating-linear-gradient(
+      135deg,
+      rgba(16,185,129,0.00) 0px, rgba(16,185,129,0.00) 22px,
+      rgba(16,185,129,0.05) 23px, rgba(16,185,129,0.00) 24px,
+      rgba(16,185,129,0.00) 72px
+    );
+  background-size:
+    cover, cover, cover, cover,
+    24px 24px, 24px 24px,
+    96px 96px, 96px 96px,
+    420px 420px,
+    900px 900px;
+  background-position:
+    center, center, center, center,
+    0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+  filter: saturate(1.12) contrast(1.18);
+}
+
+.hf-bg::before {
+  content:
+    "AAPL 195.31  +1.12%   NVDA 842.55  +2.31%   BTC  68,410  +0.84%   "
+    "SPX  5,120  +0.62%   EURUSD 1.092  -0.11%   TSLA  214.7  +1.04%   "
+    "MSFT  411.2  +0.29%   META  501.9  +0.91%   ETH  3,540  +1.20%   "
+    "QQQ  441.5  +0.47%   VIX  13.2  -2.14%   "
+    "—  SECURE · LOGGED · ENCRYPTED · AUDITED · 256-BIT · ";
+  position: absolute;
+  inset: -30%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  line-height: 2.4;
+  color: rgba(16,185,129,0.14);
+  transform: rotate(-12deg);
+  white-space: pre-wrap;
+  opacity: 0.9;
+  filter: blur(0.2px);
+  mask-image: radial-gradient(circle at 50% 45%, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.65) 55%, rgba(0,0,0,0.00) 100%);
+}
+
+.hf-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(16,185,129,0.35) 0 1px, transparent 2px),
+    radial-gradient(circle, rgba(34,197,94,0.22) 0 1px, transparent 2px),
+    radial-gradient(circle, rgba(16,185,129,0.20) 0 1px, transparent 2px),
+    repeating-linear-gradient(
+      180deg,
+      rgba(255,255,255,0.00) 0px, rgba(255,255,255,0.00) 6px,
+      rgba(255,255,255,0.03) 7px
+    );
+  background-size: 140px 140px, 210px 210px, 320px 320px, 100% 12px;
+  background-position: 0 0, 60px 80px, 120px 40px, 0 0;
+  opacity: 0.85;
+  filter: saturate(1.05) contrast(1.05);
+  mix-blend-mode: screen;
+  mask-image: radial-gradient(circle at 50% 45%, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 62%, rgba(0,0,0,0.00) 100%);
+}
+
+.hf-bg.animate {
+  animation: hf-pan 18s linear infinite;
+}
+.hf-bg.animate::before {
+  animation: hf-tape 22s linear infinite;
+}
+.hf-bg.animate::after {
+  animation: hf-pulse 9s ease-in-out infinite;
+}
+
+@keyframes hf-pan {
+  0%   { background-position: center, center, center, center, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
+  100% { background-position: center, center, center, center, -180px 120px, -180px 120px, -80px 60px, -80px 60px, -140px 0px, -200px 140px; }
+}
+@keyframes hf-tape {
+  0%   { transform: rotate(-12deg) translate3d(0,0,0); }
+  100% { transform: rotate(-12deg) translate3d(-220px,160px,0); }
+}
+@keyframes hf-pulse {
+  0%,100% { opacity: 0.78; }
+  50%     { opacity: 0.95; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hf-bg.animate,
+  .hf-bg.animate::before,
+  .hf-bg.animate::after { animation: none !important; }
+}
