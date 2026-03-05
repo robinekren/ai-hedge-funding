@@ -11,6 +11,8 @@ import Onboarding from '@/components/ui/Onboarding'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import ConnectionBanner from '@/components/ui/ConnectionBanner'
 import TickerModal from '@/components/ui/TickerModal'
+import SessionExpiryWarning from '@/components/ui/SessionExpiryWarning'
+import KeyboardShortcuts from '@/components/ui/KeyboardShortcuts'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import PortfolioOverview from '@/components/dashboard/PortfolioOverview'
 import LiveTrades from '@/components/dashboard/LiveTrades'
@@ -25,7 +27,6 @@ import AuditLog from '@/components/dashboard/AuditLog'
 export default function Dashboard() {
   const {
     auth,
-    logout,
     activeScreen,
     setActiveScreen,
     sidebarOpen,
@@ -39,18 +40,6 @@ export default function Dashboard() {
 
   // WebSocket connection
   useWebSocket()
-
-  // Session timeout check
-  useEffect(() => {
-    const checkSession = () => {
-      if (auth.isAuthenticated && auth.sessionExpiry && Date.now() > auth.sessionExpiry) {
-        logout()
-      }
-    }
-    const interval = setInterval(checkSession, 30000)
-    checkSession()
-    return () => clearInterval(interval)
-  }, [auth.isAuthenticated, auth.sessionExpiry, logout])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -125,6 +114,8 @@ export default function Dashboard() {
       <ToastContainer />
       <CommandPalette />
       <TickerModal ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />
+      <SessionExpiryWarning />
+      <KeyboardShortcuts />
       {!onboardingComplete && <Onboarding />}
     </div>
   )

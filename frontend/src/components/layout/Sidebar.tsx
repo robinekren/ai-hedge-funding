@@ -216,7 +216,7 @@ export default function Sidebar({ activeScreen, onNavigate, isOpen, onToggle }: 
               )}
             </div>
 
-            <p className="text-terminal-text-muted text-[10px]">Ctrl+K: Command Palette</p>
+            <p className="text-terminal-text-muted text-[10px]">Ctrl+K: Command Palette | ?: Shortcuts</p>
           </div>
         )}
       </aside>
