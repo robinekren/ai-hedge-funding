@@ -24,9 +24,17 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ activeScreen, onNavigate, isOpen, onToggle }: SidebarProps) {
-  const { auth, logout, theme, toggleTheme } = useStore()
+  const { auth, logout, theme, toggleTheme, funds, activeFundId, setActiveFund } = useStore()
   const [logoutConfirm, setLogoutConfirm] = useState(false)
+  const [fundDropdownOpen, setFundDropdownOpen] = useState(false)
   let currentSection = ''
+
+  const activeFund = funds.find(f => f.id === activeFundId) || funds[0]
+
+  const formatCapital = (val: number) =>
+    val >= 1_000_000_000 ? (val / 1_000_000_000).toFixed(1) + 'B'
+    : val >= 1_000_000 ? (val / 1_000_000).toFixed(1) + 'M'
+    : (val / 1_000).toFixed(0) + 'K'
 
   return (
     <>
@@ -53,6 +61,83 @@ export default function Sidebar({ activeScreen, onNavigate, isOpen, onToggle }: 
             )}
           </div>
         </div>
+
+        {/* Fund Selector */}
+        {isOpen && funds.length > 0 && (
+          <div className="mx-3 mt-3 relative">
+            <button
+              onClick={() => setFundDropdownOpen(!fundDropdownOpen)}
+              className={clsx(
+                'w-full bg-terminal-bg border rounded-lg px-3 py-2.5 flex items-center gap-2.5 transition-colors',
+                fundDropdownOpen
+                  ? 'border-terminal-green/50 shadow-green-glow'
+                  : 'border-terminal-border hover:border-terminal-text-muted'
+              )}
+            >
+              <div
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ backgroundColor: activeFund?.color || '#00ff88' }}
+              />
+              <div className="flex-1 text-left min-w-0">
+                <span className="text-terminal-text text-[11px] font-semibold block truncate">
+                  {activeFund?.name || 'Select Fund'}
+                </span>
+                <span className="text-terminal-text-muted text-[10px] block">
+                  ${formatCapital(activeFund?.starting_capital || 0)} Capital
+                </span>
+              </div>
+              <span className={clsx(
+                'text-[10px] transition-transform',
+                fundDropdownOpen ? 'text-terminal-green rotate-180' : 'text-terminal-text-muted'
+              )}>
+                ▼
+              </span>
+            </button>
+
+            {/* Dropdown */}
+            {fundDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-terminal-surface border border-terminal-border rounded-lg overflow-hidden z-50 shadow-lg shadow-black/50">
+                {funds.map((fund) => (
+                  <button
+                    key={fund.id}
+                    onClick={() => {
+                      setActiveFund(fund.id)
+                      setFundDropdownOpen(false)
+                    }}
+                    className={clsx(
+                      'w-full px-3 py-2.5 flex items-center gap-2.5 transition-colors text-left',
+                      'border-b border-terminal-border/50 last:border-b-0',
+                      fund.id === activeFundId
+                        ? 'bg-terminal-green/10'
+                        : 'hover:bg-terminal-green/5'
+                    )}
+                  >
+                    <div
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: fund.color }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className={clsx(
+                        'text-[11px] font-semibold block truncate',
+                        fund.id === activeFundId ? 'text-terminal-green' : 'text-terminal-text'
+                      )}>
+                        {fund.name}
+                      </span>
+                      <span className="text-terminal-text-muted text-[10px] block">
+                        {fund.phase === 'phase_1' ? 'Phase 1' : fund.phase === 'phase_2' ? 'Phase 2' : 'Phase 3'}
+                        {' · $'}
+                        {formatCapital(fund.starting_capital)}
+                      </span>
+                    </div>
+                    {fund.emergency_active && (
+                      <span className="text-terminal-red text-[9px] font-bold">HALT</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 py-4 overflow-y-auto">
@@ -114,7 +199,7 @@ export default function Sidebar({ activeScreen, onNavigate, isOpen, onToggle }: 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-terminal-green text-xs font-bold">{auth.user?.name || 'Guest'}</p>
-                <p className="text-terminal-text-muted text-[10px]">{auth.user?.role === 'owner' ? 'Owner' : 'Investor'}</p>
+                <p className="text-terminal-text-muted text-[10px]">{auth.user?.role === 'owner' ? 'Fund Manager' : 'Investor'}</p>
               </div>
               {logoutConfirm ? (
                 <div className="flex items-center gap-1">
@@ -131,7 +216,7 @@ export default function Sidebar({ activeScreen, onNavigate, isOpen, onToggle }: 
               )}
             </div>
 
-            <p className="text-terminal-text-muted text-[10px]">Ctrl+K: Command Palette</p>
+            <p className="text-terminal-text-muted text-[10px]">Ctrl+K: Command Palette | ?: Shortcuts</p>
           </div>
         )}
       </aside>

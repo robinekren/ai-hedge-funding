@@ -6,7 +6,8 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { useStore } from '@/store/useStore'
 
 export default function InvestorPortal() {
-  const { addToast, auth } = useStore()
+  const { addToast, auth, activeFundId, funds } = useStore()
+  const activeFund = funds.find(f => f.id === activeFundId)
   const isInvestor = auth.user?.role === 'investor'
   const [selectedLP, setSelectedLP] = useState(isInvestor ? 'lp_1' : 'all')
 
@@ -55,7 +56,10 @@ export default function InvestorPortal() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-terminal-green text-xl font-bold">Investor Portal</h2>
+        <h2 className="text-terminal-green text-xl font-bold">
+          Investor Portal
+          {activeFund && <span className="text-terminal-text-dim text-sm font-normal ml-3">— {activeFund.name}</span>}
+        </h2>
         <div className="flex items-center gap-3">
           <button onClick={handleExportPDF} className="btn-outline text-xs">Export PDF Report</button>
           <span className="text-xs text-terminal-text-muted border border-terminal-border px-2 py-1 rounded">READ-ONLY</span>

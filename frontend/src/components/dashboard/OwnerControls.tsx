@@ -22,7 +22,9 @@ export default function OwnerControls() {
     agentStates, setAgentState, setAllAgentStates,
     emergencyActive, setEmergencyActive,
     addToast, addAuditEntry, auth,
+    activeFundId, funds,
   } = useStore()
+  const activeFund = funds.find(f => f.id === activeFundId)
 
   const [emergencyConfirm, setEmergencyConfirm] = useState(false)
   const [limitInput, setLimitInput] = useState(dailyLossLimit.toString())
@@ -101,7 +103,10 @@ export default function OwnerControls() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-terminal-green text-xl font-bold">Owner Controls</h2>
+        <h2 className="text-terminal-green text-xl font-bold">
+          Owner Controls
+          {activeFund && <span className="text-terminal-text-dim text-sm font-normal ml-3">— {activeFund.name}</span>}
+        </h2>
         <span className="text-xs text-terminal-text-muted">
           Logged in as: <span className="text-terminal-green">{auth.user?.name || 'unknown'}</span>
         </span>

@@ -1,6 +1,7 @@
 /**
  * AI Hedge Funding — API Client
  * Connects dashboard to FastAPI backend.
+ * Multi-fund aware: all fund-scoped endpoints accept fundId parameter.
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
@@ -32,6 +33,19 @@ class APIClient {
     return res.json()
   }
 
+  private fundQuery(fundId?: string): string {
+    return fundId ? `?fund_id=${encodeURIComponent(fundId)}` : ''
+  }
+
+  // Fund Management
+  async getFunds() {
+    return this.request('/funds')
+  }
+
+  async getFund(fundId: string) {
+    return this.request(`/funds/${fundId}`)
+  }
+
   // Auth
   async login(username: string, password: string) {
     const data = await this.request('/auth/login', {
@@ -43,55 +57,57 @@ class APIClient {
   }
 
   // Dashboard Metrics (Top Bar — 5 Trillionaire Metrics)
-  async getMetrics() {
-    return this.request('/dashboard/metrics')
+  async getMetrics(fundId?: string) {
+    return this.request(`/dashboard/metrics${this.fundQuery(fundId)}`)
   }
 
   // Portfolio Overview
-  async getPortfolioOverview() {
-    return this.request('/portfolio/overview')
+  async getPortfolioOverview(fundId?: string) {
+    return this.request(`/portfolio/overview${this.fundQuery(fundId)}`)
   }
 
   // Live Trades
-  async getLiveTrades() {
-    return this.request('/trades/live')
+  async getLiveTrades(fundId?: string) {
+    return this.request(`/trades/live${this.fundQuery(fundId)}`)
   }
 
-  // Signal Feed
+  // Signal Feed (global — no fund_id needed)
   async getSignalFeed() {
     return this.request('/signals/feed')
   }
 
-  // Agent Status
+  // Agent Status (global — no fund_id needed)
   async getAgentStatus() {
     return this.request('/agents/status')
   }
 
   // Risk Monitor
-  async getRiskMonitor() {
-    return this.request('/risk/monitor')
+  async getRiskMonitor(fundId?: string) {
+    return this.request(`/risk/monitor${this.fundQuery(fundId)}`)
   }
 
   // Strategy Library
-  async getStrategyLibrary() {
-    return this.request('/strategies/library')
+  async getStrategyLibrary(fundId?: string) {
+    return this.request(`/strategies/library${this.fundQuery(fundId)}`)
   }
 
   // Backtest Runner
-  async runBacktest(variations: number = 5) {
-    return this.request('/strategies/backtest', {
+  async runBacktest(variations: number = 5, fundId?: string) {
+    return this.request(`/strategies/backtest${this.fundQuery(fundId)}`, {
       method: 'POST',
       body: JSON.stringify({ variations }),
     })
   }
 
   // Owner Controls
-  async phaseTransition(target: string) {
-    return this.request(`/controls/phase-transition?target=${target}`, { method: 'POST' })
+  async phaseTransition(target: string, fundId?: string) {
+    const q = fundId ? `?target=${target}&fund_id=${encodeURIComponent(fundId)}` : `?target=${target}`
+    return this.request(`/controls/phase-transition${q}`, { method: 'POST' })
   }
 
-  async setDailyLossLimit(limit: number) {
-    return this.request(`/controls/daily-loss-limit?limit=${limit}`, { method: 'POST' })
+  async setDailyLossLimit(limit: number, fundId?: string) {
+    const q = fundId ? `?limit=${limit}&fund_id=${encodeURIComponent(fundId)}` : `?limit=${limit}`
+    return this.request(`/controls/daily-loss-limit${q}`, { method: 'POST' })
   }
 
   async pauseAgent(role: string) {
@@ -102,8 +118,8 @@ class APIClient {
     return this.request(`/controls/agent/${role}/start`, { method: 'POST' })
   }
 
-  async emergencyStop() {
-    return this.request('/controls/emergency-stop', { method: 'POST' })
+  async emergencyStop(fundId?: string) {
+    return this.request(`/controls/emergency-stop${this.fundQuery(fundId)}`, { method: 'POST' })
   }
 
   // Trade Approval (Phase 1)
@@ -130,12 +146,12 @@ class APIClient {
   }
 
   // Investor Portal (Read-Only)
-  async getInvestorPortfolio() {
-    return this.request('/investor/portfolio')
+  async getInvestorPortfolio(fundId?: string) {
+    return this.request(`/investor/portfolio${this.fundQuery(fundId)}`)
   }
 
-  async getInvestorPerformance() {
-    return this.request('/investor/performance')
+  async getInvestorPerformance(fundId?: string) {
+    return this.request(`/investor/performance${this.fundQuery(fundId)}`)
   }
 
   // System Info

@@ -6,7 +6,8 @@ import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Responsive
 import { useStore } from '@/store/useStore'
 
 export default function StrategyLibrary() {
-  const { addToast, addAuditEntry, auth } = useStore()
+  const { addToast, addAuditEntry, auth, activeFundId, funds } = useStore()
+  const activeFund = funds.find(f => f.id === activeFundId)
 
   const [strategies] = useState([
     { id: 's-1', name: 'WSB Steady Accumulator v3', is_active: true, win_rate: 0.94, total_return: 0.482, sharpe_ratio: 3.12, total_trades: 67, asset_class: 'US Equities', capital: 18400 },
@@ -72,7 +73,10 @@ export default function StrategyLibrary() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-terminal-green text-xl font-bold">Strategy Library</h2>
+      <h2 className="text-terminal-green text-xl font-bold">
+        Strategy Library
+        {activeFund && <span className="text-terminal-text-dim text-sm font-normal ml-3">— {activeFund.name}</span>}
+      </h2>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="card">

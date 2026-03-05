@@ -1,9 +1,10 @@
 """
 AI Hedge Funding — API Routes
 All dashboard screens, owner controls, and investor portal endpoints.
+Multi-fund aware: all fund-scoped endpoints accept fund_id query parameter.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional
 
@@ -12,7 +13,7 @@ from backend.api.auth import (
     create_token, pwd_context, USERS, UserRole,
 )
 from backend.models.schemas import (
-    DashboardMetrics, AgentState, AgentRole, OwnerControl,
+    Fund, DashboardMetrics, AgentState, AgentRole, OwnerControl,
     TradeProposal, TradeStatus, InvestorPortfolioView,
     PortfolioSnapshot, RiskSnapshot, SocialSignal,
     Strategy, BacktestResult,
@@ -34,6 +35,58 @@ def get_manager():
     if agent_manager is None:
         raise HTTPException(status_code=503, detail="System not initialized")
     return agent_manager
+
+
+def get_fund_or_default(fund_id: str = "") -> str:
+    """Resolve fund_id — use default if not provided."""
+    if not fund_id and data_store:
+        funds = data_store.get_all_funds()
+        if funds:
+            return funds[0].id
+    return fund_id
+
+
+def require_fund_access(fund_id: str, user: User):
+    """Check if user has access to this fund."""
+    user_data = USERS.get(user.username)
+    if user_data and user_data.get("role") in (UserRole.OWNER, UserRole.CTO):
+        return  # Owner/CTO can access all funds
+    # Investors: check fund_ids list
+    if user_data and fund_id not in user_data.get("fund_ids", []):
+        raise HTTPException(status_code=403, detail="No access to this fund")
+
+
+# ─── Fund Management ─────────────────────────────────────
+
+@router.get("/funds")
+async def list_funds(user: User = Depends(verify_token)):
+    """List all funds the user has access to."""
+    if not data_store:
+        return {"funds": []}
+
+    all_funds = data_store.get_all_funds()
+
+    # Owner/CTO see all funds
+    user_data = USERS.get(user.username)
+    if user_data and user_data.get("role") in (UserRole.OWNER, UserRole.CTO):
+        return {"funds": [f.dict() for f in all_funds]}
+
+    # Investors see only their assigned funds
+    allowed = user_data.get("fund_ids", []) if user_data else []
+    filtered = [f for f in all_funds if f.id in allowed]
+    return {"funds": [f.dict() for f in filtered]}
+
+
+@router.get("/funds/{fund_id}")
+async def get_fund(fund_id: str, user: User = Depends(verify_token)):
+    """Get a single fund's details."""
+    if not data_store:
+        raise HTTPException(status_code=404, detail="Fund not found")
+    fund = data_store.get_fund(fund_id)
+    if not fund:
+        raise HTTPException(status_code=404, detail="Fund not found")
+    require_fund_access(fund_id, user)
+    return fund.dict()
 
 
 # ─── Auth ────────────────────────────────────────────────
@@ -67,23 +120,40 @@ async def login(request: LoginRequest):
 # ─── Dashboard Metrics (Top Bar — 5 Trillionaire Metrics) ──
 
 @router.get("/dashboard/metrics", response_model=DashboardMetrics)
-async def get_metrics(user: User = Depends(verify_token)):
+async def get_metrics(
+    fund_id: str = Query(default="", description="Fund to get metrics for"),
+    user: User = Depends(verify_token),
+):
     """Get the 5 always-visible metrics for the top bar."""
     mgr = get_manager()
-    return mgr.get_dashboard_metrics()
+    fund_id = get_fund_or_default(fund_id)
+    if fund_id:
+        require_fund_access(fund_id, user)
+    metrics = mgr.get_dashboard_metrics()
+    metrics.fund_id = fund_id
+    return metrics
 
 
 # ─── Portfolio Overview Screen ───────────────────────────
 
 @router.get("/portfolio/overview")
-async def get_portfolio_overview(user: User = Depends(verify_token)):
+async def get_portfolio_overview(
+    fund_id: str = Query(default="", description="Fund ID"),
+    user: User = Depends(verify_token),
+):
     """Total performance, equity curve, returns by strategy."""
     mgr = get_manager()
+    fund_id = get_fund_or_default(fund_id)
+    if fund_id:
+        require_fund_access(fund_id, user)
+
     snapshot = mgr.portfolio_conductor.get_snapshot(
         daily_pnl=mgr.risk_sentinel.daily_pnl,
     )
+    snapshot.fund_id = fund_id
     strategies = mgr.strategy_engine.get_top_strategies(20)
     return {
+        "fund_id": fund_id,
         "snapshot": snapshot,
         "strategies": strategies,
         "equity_curve": [s.dict() for s in mgr.portfolio_conductor.snapshots[-100:]],
@@ -93,13 +163,25 @@ async def get_portfolio_overview(user: User = Depends(verify_token)):
 # ─── Live Trades Screen ─────────────────────────────────
 
 @router.get("/trades/live")
-async def get_live_trades(user: User = Depends(verify_token)):
+async def get_live_trades(
+    fund_id: str = Query(default="", description="Fund ID"),
+    user: User = Depends(verify_token),
+):
     """All open positions with real-time P&L."""
     mgr = get_manager()
+    fund_id = get_fund_or_default(fund_id)
+    if fund_id:
+        require_fund_access(fund_id, user)
+
+    positions = [p for p in mgr.execution_agent.positions if not fund_id or p.fund_id == fund_id]
+    proposals = [p for p in mgr.execution_agent.pending_proposals if not fund_id or p.fund_id == fund_id]
+    fills = [t for t in mgr.execution_agent.executed_trades[-20:] if not fund_id or t.fund_id == fund_id]
+
     return {
-        "positions": [p.dict() for p in mgr.execution_agent.positions],
-        "pending_proposals": [p.dict() for p in mgr.execution_agent.pending_proposals],
-        "recent_fills": [t.dict() for t in mgr.execution_agent.executed_trades[-20:]],
+        "fund_id": fund_id,
+        "positions": [p.dict() for p in positions],
+        "pending_proposals": [p.dict() for p in proposals],
+        "recent_fills": [t.dict() for t in fills],
     }
 
 
@@ -107,7 +189,7 @@ async def get_live_trades(user: User = Depends(verify_token)):
 
 @router.get("/signals/feed")
 async def get_signal_feed(user: User = Depends(verify_token)):
-    """Live Reddit signals — what the system is watching."""
+    """Live Reddit signals — what the system is watching. Signals are global."""
     mgr = get_manager()
     return {
         "signals": [s.dict() for s in (data_store.get_recent_signals(50) if data_store else [])],
@@ -120,7 +202,7 @@ async def get_signal_feed(user: User = Depends(verify_token)):
 
 @router.get("/agents/status")
 async def get_agent_status(user: User = Depends(verify_token)):
-    """Health status of all 8 AI roles."""
+    """Health status of all 8 AI roles. Agents are shared across funds."""
     mgr = get_manager()
     return {"agents": [s.dict() for s in mgr.get_all_states()]}
 
@@ -128,26 +210,50 @@ async def get_agent_status(user: User = Depends(verify_token)):
 # ─── Risk Monitor Screen ────────────────────────────────
 
 @router.get("/risk/monitor")
-async def get_risk_monitor(user: User = Depends(verify_token)):
+async def get_risk_monitor(
+    fund_id: str = Query(default="", description="Fund ID"),
+    user: User = Depends(verify_token),
+):
     """Live drawdown, daily loss vs. limit, correlation heatmap."""
     mgr = get_manager()
+    fund_id = get_fund_or_default(fund_id)
+    if fund_id:
+        require_fund_access(fund_id, user)
+
     risk_data = mgr.risk_sentinel.get_risk_snapshot(mgr.portfolio_value)
+    risk_data.fund_id = fund_id
+
+    # Use fund-specific settings if available
+    fund = data_store.get_fund(fund_id) if data_store and fund_id else None
+    daily_loss_limit = fund.daily_loss_limit if fund else settings.DAILY_LOSS_LIMIT
+    current_phase = fund.phase if fund else settings.CURRENT_PHASE.value
+    execution_mode = fund.execution_mode if fund else settings.EXECUTION_MODE.value
+
     return {
+        "fund_id": fund_id,
         "risk": risk_data.dict(),
-        "daily_loss_limit": settings.DAILY_LOSS_LIMIT,
-        "current_phase": settings.CURRENT_PHASE.value,
-        "execution_mode": settings.EXECUTION_MODE.value,
+        "daily_loss_limit": daily_loss_limit,
+        "current_phase": current_phase,
+        "execution_mode": execution_mode,
     }
 
 
 # ─── Strategy Library Screen (Phase 2) ──────────────────
 
 @router.get("/strategies/library")
-async def get_strategy_library(user: User = Depends(verify_token)):
+async def get_strategy_library(
+    fund_id: str = Query(default="", description="Fund ID"),
+    user: User = Depends(verify_token),
+):
     """All strategies with performance metrics and filters."""
     mgr = get_manager()
-    strategies = mgr.strategy_engine.strategies
+    fund_id = get_fund_or_default(fund_id)
+    if fund_id:
+        require_fund_access(fund_id, user)
+
+    strategies = [s for s in mgr.strategy_engine.strategies if not fund_id or s.fund_id == fund_id]
     return {
+        "fund_id": fund_id,
         "strategies": [s.dict() for s in strategies],
         "total_count": len(strategies),
         "active_count": len([s for s in strategies if s.is_active]),
@@ -165,6 +271,7 @@ class BacktestRequest(BaseModel):
 @router.post("/strategies/backtest")
 async def run_backtest(
     request: BacktestRequest,
+    fund_id: str = Query(default="", description="Fund ID"),
     user: User = Depends(require_owner),
 ):
     """Launch new backtest variations."""
@@ -178,15 +285,40 @@ async def run_backtest(
 @router.post("/controls/phase-transition")
 async def phase_transition(
     target: str,
+    fund_id: str = Query(default="", description="Fund ID"),
     user: User = Depends(require_owner),
 ):
-    """Confirm switch Phase 1 → 2 → 3 (manual approval required)."""
+    """Confirm switch Phase 1 → 2 → 3 (per fund)."""
+    fund_id = get_fund_or_default(fund_id)
+    fund = data_store.get_fund(fund_id) if data_store and fund_id else None
+
+    if fund:
+        # Per-fund phase transition
+        phase_map = {"phase_2": "phase_2", "phase_3": "phase_3"}
+        target_phase = phase_map.get(target)
+        if not target_phase:
+            raise HTTPException(status_code=400, detail="Invalid target phase")
+
+        valid = (fund.phase == "phase_1" and target == "phase_2") or \
+                (fund.phase == "phase_2" and target == "phase_3")
+        if not valid:
+            raise HTTPException(status_code=400, detail="Phase transition not allowed")
+
+        fund.phase = target_phase
+        exec_map = {"phase_1": "supervised", "phase_2": "semi_autonomous", "phase_3": "fully_autonomous"}
+        fund.execution_mode = exec_map.get(target_phase, fund.execution_mode)
+
+        return {
+            "success": True,
+            "fund_id": fund_id,
+            "current_phase": fund.phase,
+            "execution_mode": fund.execution_mode,
+        }
+
+    # Fallback: global transition
     mgr = get_manager()
-    phase_map = {
-        "phase_2": Phase.PHASE_2,
-        "phase_3": Phase.PHASE_3,
-    }
-    target_phase = phase_map.get(target)
+    phase_enum_map = {"phase_2": Phase.PHASE_2, "phase_3": Phase.PHASE_3}
+    target_phase = phase_enum_map.get(target)
     if not target_phase:
         raise HTTPException(status_code=400, detail="Invalid target phase")
 
@@ -196,21 +328,29 @@ async def phase_transition(
 
     return {
         "success": True,
+        "fund_id": fund_id,
         "current_phase": settings.CURRENT_PHASE.value,
         "execution_mode": settings.EXECUTION_MODE.value,
-        "meta_learner_mode": settings.META_LEARNER_MODE.value,
     }
 
 
 @router.post("/controls/daily-loss-limit")
 async def set_daily_loss_limit(
     limit: float,
+    fund_id: str = Query(default="", description="Fund ID"),
     user: User = Depends(require_owner),
 ):
-    """Set and adjust the kill-switch threshold in real-time."""
+    """Set and adjust the kill-switch threshold (per fund)."""
+    fund_id = get_fund_or_default(fund_id)
+    fund = data_store.get_fund(fund_id) if data_store and fund_id else None
+
+    if fund:
+        fund.daily_loss_limit = limit
+        return {"fund_id": fund_id, "daily_loss_limit": fund.daily_loss_limit}
+
     mgr = get_manager()
     mgr.set_daily_loss_limit(limit)
-    return {"daily_loss_limit": settings.DAILY_LOSS_LIMIT}
+    return {"fund_id": fund_id, "daily_loss_limit": settings.DAILY_LOSS_LIMIT}
 
 
 @router.post("/controls/agent/{role}/pause")
@@ -246,10 +386,21 @@ async def start_agent(
 
 
 @router.post("/controls/emergency-stop")
-async def emergency_stop(user: User = Depends(require_owner)):
+async def emergency_stop(
+    fund_id: str = Query(default="", description="Fund ID"),
+    user: User = Depends(require_owner),
+):
     """Immediately close all trades and halt all execution."""
     mgr = get_manager()
+    fund_id = get_fund_or_default(fund_id)
+
+    # Mark fund as emergency
+    fund = data_store.get_fund(fund_id) if data_store and fund_id else None
+    if fund:
+        fund.emergency_active = True
+
     result = await mgr.emergency_stop()
+    result["fund_id"] = fund_id
 
     if notifier:
         await notifier.notify_emergency_stop(result["positions_closed"])
@@ -333,21 +484,34 @@ async def get_autonomy_status(user: User = Depends(require_owner)):
 # ─── Investor Portal (Separate, Read-Only) ──────────────
 
 @router.get("/investor/portfolio", response_model=InvestorPortfolioView)
-async def get_investor_portfolio(user: User = Depends(require_investor)):
-    """
-    Read-only investor portal.
-    Shows: total fund return, capital deployed, monthly performance.
-    Completely separate from main dashboard.
-    """
+async def get_investor_portfolio(
+    fund_id: str = Query(default="", description="Fund ID"),
+    user: User = Depends(require_investor),
+):
+    """Read-only investor portal — scoped to investor's fund."""
+    fund_id = get_fund_or_default(fund_id)
+    if fund_id:
+        require_fund_access(fund_id, user)
+
     mgr = get_manager()
-    return mgr.compliance_capital.generate_investor_report()
+    report = mgr.compliance_capital.generate_investor_report()
+    report.fund_id = fund_id
+    return report
 
 
 @router.get("/investor/performance")
-async def get_investor_performance(user: User = Depends(require_investor)):
+async def get_investor_performance(
+    fund_id: str = Query(default="", description="Fund ID"),
+    user: User = Depends(require_investor),
+):
     """Monthly performance breakdown for investors."""
+    fund_id = get_fund_or_default(fund_id)
+    if fund_id:
+        require_fund_access(fund_id, user)
+
     mgr = get_manager()
     return {
+        "fund_id": fund_id,
         "monthly_returns": mgr.compliance_capital.monthly_returns,
         "total_return": mgr.compliance_capital.total_fund_return,
         "aum": mgr.compliance_capital.aum,
