@@ -1,14 +1,11 @@
 #!/bin/bash
-# CI/CD Localhost Shortcut — ai-hedge-funding
-# Baut und startet das Frontend auf http://localhost:3000
-
 set -e
 
-cd "$(dirname "$0")/frontend"
-
+cd /home/user/ai-hedge-funding
 git checkout main
 git pull origin main
 
+cd frontend
 rm -rf .next
 npm install
 npx next build
